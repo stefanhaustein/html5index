@@ -1,0 +1,35 @@
+th {
+  background-color: #cfc;
+}
+
+td, th {
+  border: 1px solid gray;
+  padding: 5px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.members td:first-child {
+  width: 20%;
+}
+
+dl {
+  margin: 0;
+}
+
+ol.plain, ul.plain, .plain li {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+  margin-top: 1em;
+}
+
+body {
+  font-family: Sans-Serif;
+}

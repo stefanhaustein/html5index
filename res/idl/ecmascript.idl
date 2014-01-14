@@ -1,0 +1,284 @@
+
+[Global]
+interface Global {
+  readonly attribute float NaN;
+  readonly attribute double Infinity;
+  readonly attribute object undefined;
+  
+  any eval(in string x);
+  int parseInt(in string s, in int radix);
+  double parseFloat(in string s);
+  boolean isNaN(double n);
+  boolean isFinite(in double n);
+  string decodeURI(in string encodedURI); 
+  string decodeURIComponent(in string encodedURIComponent); 
+  string encodeURI(in string uri);
+  string encodeURIComponent(in string uriComponent);
+};
+
+[ 
+  Constructor(optional any value) 
+]
+interface Object {
+  // TODO(haustein) Some of the parameter types of the static methods
+  // may need refinement.
+
+  static Object getPrototypeOf(in Object o);
+  static Object getOwnPropertyDescriptor(in Object o, in string p);
+  static string[] getOwnPropertyNames(in Object o);
+  static Object create(in Object o, optional in any properties);
+  static Object defineProperty(in Object o, in string p, in any attrs);
+  static Object defineProperties(in Object o, in any props);
+  static Object seal(Object o);
+  static Object freeze(Object o);
+  static Object preventExtensions(Object o);
+  static boolean isSealed(in Object o);
+  static boolean isFrozen(in Object o);
+  static boolean isExtensible(in Object o);
+  static string[] keys(in Object o);
+  
+  string toString();
+  string toLocaleString();
+  Object valueOf();
+  boolean hasOwnProperty(string property);
+  boolean isPrototypeOf(Object o);
+  boolean propertyIsEnumerable(string p);
+};
+
+
+[
+  Constructor(string... paramsAndBody)
+] 
+interface Function{
+  attribute int length;
+  
+  string toString();
+  any apply(any thisArg, Array argArray);
+  any call(any thisArg, any... args);
+  any bind(any thisArg, any... args);
+};
+
+
+[ 
+  Constructor(optional any... params),
+  Constructor(int size)
+]
+interface Array {
+  static boolean isArray(in any arg);
+
+  attribute int length;
+  
+  string toString();
+  string toLocaleString();
+  string concat(any... items);
+  string join(in string separator);
+  any pop();
+  Array push(any... items);
+  Array reverse();
+  Array shift();
+  Array slice(in int start, in int end);
+  Array sort(Function compareFn);
+  Array splice (int start, int deleteCount, any... items);
+  Array unshift(any... items);
+  int indexOf(any searchElement, optional int fromIndex);
+  int lastIndexOf(any searchElement, optional int fromIndex);
+  Array every(Function callbackfn, optional any thisArg);
+  Array some(Function callbackfn, optional any thisArg);
+  Array forEach(Function callbackfn, optional any thisArg);
+  Array map(Function callbackfn, optional any thisArg);
+  Array filter(Function callbackfn, optional any thisArg);
+  any reduce(Function callbackfn, optional any initialValue);
+  any reduceRight(Function callbackfn, optional any initialValue);
+};
+
+[ 
+  Constructor(any value)
+]
+interface String {
+  static string fromCharCode(int... chars);
+  string toString();
+  string valueOf();
+  string charAt(int pos);
+  
+  attribute int length;
+  
+  int charCodeAt(int pos);
+  string concat(string... strings);
+  int indexOf(string searchString, optional int position);
+  int lastIndexOf(string searchString, optional int position);
+  int localCompare(string that);
+  Array match(any regexp);
+  string replace(string searchValue, string replaceValue);
+  int search(any regexp);
+  string slice(int start, int end);
+  string split(string separator, int limit);
+  string substring(int start, int end);
+  string toLowerCase();
+  string toLocaleLowerCase();
+  string toUpperCase();
+  string toLocaleUpperCase();
+  string trim();
+};
+
+
+[ 
+  Constructor(any value)
+]
+interface Boolean {
+  string toString();
+  boolean valueOf();
+};
+
+
+[ 
+  Constructor(any value)
+]
+interface Number {
+  const number MAX_VALUE = 1.7976931348623157e308;
+  const number MIN_VALUE = 5e-324;
+  const number NaN = NaN;
+  const number NEGATIVE_INFINITY = inf;
+  const number POSITIVE_INFINITY = -inf;
+  
+  string toString(optional int radix);
+  string toLocaleString();
+  number valueOf();
+  string toFixed(int fractionDigits);
+  string toExponential(int fractionDigits);
+  string toPrecision(int precision);
+};
+
+
+interface Math {
+  const number E = 2.7182818284590452354;
+  const number LN10 = 2.302585092994046;
+  const number LN2 = 0.6931471805599453;
+  const number LOG2E = 1.4426950408889634;
+  const number LOG10E = 0.4342944819032518;
+  const number PI = 3.1415926535897932;
+  const number SQRT1_2 = 0.7071067811865476;
+  const number SQRT2 = 1.4142135623730951;
+  
+  static number abs(number x);
+  static number acos(number x);
+  static number asin(number x);
+  static number atan(number x);
+  static number atan2(number y, number x);
+  static number ceil(number x);
+  static number cos(number x);
+  static number exp(number x);
+  static number floor(number x);
+  static number log(number x);
+  static number max(number... values);
+  static number min(number... values);
+  static number pow(number x, number y);
+  static number random();
+  static number round(number x);
+  static number sin(number x);
+  static number sqrt(number x);
+  static number tan(number x);
+};
+
+
+[
+  Constructor(),
+  Constructor(int year, int month, optional int date, optional int hours, optional int minutes, optional int seconds, optional int ms)
+]
+interface Date {
+  static Date UTC(int year, int month, optional int date, optional int hours, optional int minutes, optional int seconds, optional int ms);
+  static Date now();
+
+  string toString();
+  string toDateString();
+  string toTimeString();
+  string toLocaleString();
+  string toLocaleDateString();
+  string toLocaleTimeString();
+  number valueOf();
+  number getTime();
+  int getFullYear();
+  int getUTCFullYear();
+  int getMonth();
+  int getUTCMonth();
+  number getDate();
+  number getUTCDate();
+  int getDay();
+  int getUTCDay();
+  int getHours();
+  int getUTCHours();
+  int getMinutes();
+  int getUTCMinutes();
+  int getSeconds();
+  int getUTCSeconds();
+  int getMilliseconds();
+  int getUTCMilliseconds();
+  int getTimezoneOffset();
+  number setTime(number time);
+  number setMilliseconds(int ms);
+  number setUTCMilliseconds(int ms);
+  number setSeconds(int sec, optional int ms);
+  number setUTCSeconds(int sec, optional int ms);
+  number setMinutes(int min, optional int sec, optional int ms);
+  number setUTCMinutes(int min, optional int sec, optional int ms);
+  number setHours(int hour, optional int min, optional int sec, optional int ms);
+  number setUTCHours(int hour, optional int min, optional int sec, optional int ms);
+  number setDate(int date);
+  number setUTCDate(int date);
+  number setMonth(int month, optional int date);
+  number setUTCMonth(int month, optional int date);
+  number setFullYear(int year, optional int month, optional int date);
+  number setUTCFUllYear(int year, optional int month, optional int date);
+  string toUTCString();
+  string toISOString();
+  string toJson(any key);
+};
+
+[
+  Constructor(any pattern, string flags)
+]
+interface RegExp {
+  readonly attribute string source;
+  readonly attribute boolean global;
+  readonly attribute boolean ignoreCase;
+  readonly attribute boolean multiline;
+  readonly attribute int lastIndex;
+  
+  boolean test(string s);
+};
+
+[
+  Constructor(string message)
+]
+exception Error {
+  string name;
+  string message;
+};
+
+exception EvalError : Error {
+};
+
+exception RangeError : Error {
+};
+
+exception ReferenceError : Error {
+};
+
+exception SyntaxError : Error {
+};
+
+exception TypeError : Error {
+};
+
+exception URIError : Error {
+};
+
+exception NativeError : Error {
+};
+
+interface JSON {
+  static any parse(string json);
+  static string stringify(any value, optional any replacer, optional any space);
+};
+
+
+// TODO(haustein): RegExp, Errors, Json
