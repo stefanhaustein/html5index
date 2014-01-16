@@ -1,8 +1,8 @@
 
 [Global]
 interface Global {
-  readonly attribute float NaN;
-  readonly attribute double Infinity;
+  readonly attribute number NaN;
+  readonly attribute number Infinity;
   readonly attribute object undefined;
   
   any eval(in string x);
@@ -106,7 +106,7 @@ interface String {
   string concat(string... strings);
   int indexOf(string searchString, optional int position);
   int lastIndexOf(string searchString, optional int position);
-  int localCompare(string that);
+  int localeCompare(string that);
   Array match(any regexp);
   string replace(string searchValue, string replaceValue);
   int search(any regexp);
@@ -227,10 +227,10 @@ interface Date {
   number setMonth(int month, optional int date);
   number setUTCMonth(int month, optional int date);
   number setFullYear(int year, optional int month, optional int date);
-  number setUTCFUllYear(int year, optional int month, optional int date);
+  number setUTCFullYear(int year, optional int month, optional int date);
   string toUTCString();
   string toISOString();
-  string toJson(any key);
+  string toJSON(any key);
 };
 
 [

@@ -11,17 +11,11 @@ public class Library extends Artifact {
   Model model;
   private final Type globals = new Type(GLOBAL_TYPE_NAME);
   boolean readOnly;
-
-  private DocumentationProvider documentationProvider;
   
   public Library(String name, boolean readOnly) {
     super(name);
     globals.owner = this;
     this.readOnly = readOnly;
-  }
-  
-  public void setDocumentationProvider(DocumentationProvider documentationProvider) {
-    this.documentationProvider = documentationProvider;
   }
   
   public void addType(Type type) {
@@ -67,10 +61,4 @@ public class Library extends Artifact {
   public boolean isReadOnly() {
     return readOnly;
   }
-
-  public DocumentationProvider getDocumentationProvider() {
-    return documentationProvider;
-  }
-
-
 }

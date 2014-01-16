@@ -5,6 +5,8 @@ import org.html5index.util.HtmlWriter;
 public abstract class Artifact implements Comparable<Artifact> {
   protected String name;
   protected String documentation;
+  protected DocumentationProvider documentationProvider;
+
   /** 
    * All globals are stored in the globals object. This field is used to preserve
    * the original webIDL interface in this case.
@@ -24,7 +26,7 @@ public abstract class Artifact implements Comparable<Artifact> {
   }
   
   public String getDocumentationLink() {
-    return getLibrary().getDocumentationProvider().getLink(this);
+    return getDocumentationProvider().getLink(this);
   }
   
   public void setNameQualifier(String key) {
@@ -39,6 +41,20 @@ public abstract class Artifact implements Comparable<Artifact> {
     this.documentation = s;
   }
   
+  public void setDocumentationProvider(DocumentationProvider documentationProvider) {
+    this.documentationProvider = documentationProvider;
+  }
+  
+  public DocumentationProvider getDocumentationProvider() {
+    if (documentationProvider == null) {
+      Library lib = getLibrary();
+      if (lib != this && lib != null) {
+        return lib.getDocumentationProvider();
+      }
+    }
+    return documentationProvider;
+  }
+
   public String toString() {
     return name;
   }

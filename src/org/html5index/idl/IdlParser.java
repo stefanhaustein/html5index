@@ -110,7 +110,9 @@ public class IdlParser {
       tokenizer.nextToken();
     }
     consume(';');
-    return new Property(name, type, true, sb.toString().trim());
+    Property property = new Property(name, type, true, sb.toString().trim());
+    property.setDocumentationProvider(lib.getDocumentationProvider());
+    return property;
   }
 
   private Property parseProperty() {
@@ -123,7 +125,9 @@ public class IdlParser {
     String name = tokenizer.sval;
     consume(Tokenizer.TT_WORD);
     consume(';');
-    return new Property(name, propertyType, false, null);
+    Property property = new Property(name, propertyType, false, null);
+    property.setDocumentationProvider(lib.getDocumentationProvider());
+    return property;
   }
  
   private Operation parseOperation() {
@@ -331,7 +335,9 @@ public class IdlParser {
         }
         value = sb.toString();
       }
-      type.addProperty(new Property(fieldName, fieldType, false, value));
+      Property property = new Property(fieldName, fieldType, false, value);
+      property.setDocumentationProvider(lib.getDocumentationProvider());
+      type.addProperty(property);
       consume(';');
     } while (tokenizer.ttype != '}');
     consume('}');
@@ -393,29 +399,33 @@ public class IdlParser {
   }
   
   private void parseWithOptions() {
-    consume('[');
+    // Precondition: on '[';
     Operation result = null;
     boolean global = false;
     boolean noInterfaceObject = false;
-    if ("NoInterfaceObject".equals(tokenizer.sval)) {
-      noInterfaceObject = true;
-      consumeIdentifier();
-    } else if ("Global".equals(tokenizer.sval)) {
-      global = true;
-      consumeIdentifier();
-    } else if ("ArrayClass".equals(tokenizer.sval) || 
-        "TreatNonCallableAsNull".equals(tokenizer.sval) ||
-        "OverrideBuiltins".equals(tokenizer.sval) ||
-        "Unforgeable".equals(tokenizer.sval)) {
-      consumeIdentifier();
-    } else {
-      while("Constructor".equals(tokenizer.sval) || "NamedConstructor".equals(tokenizer.sval)) {
+    do {
+      tokenizer.nextToken();
+      String option = consumeIdentifier();
+      if ("NoInterfaceObject".equals(option)) {
+        noInterfaceObject = true;
+      } else if ("Global".equals(option)) {
+        global = true;
+      } else if ("Callback".equals(option)) {
+        consume('=');
+        consumeIdentifier();
+      } else if ("ArrayClass".equals(option) || 
+          "TreatNonCallableAsNull".equals(option) ||
+          "OverrideBuiltins".equals(option) ||
+          "Unforgeable".equals(option) ||
+          "Supplemental".equals(option)) {
+      } else if ("Constructor".equals(option) || "NamedConstructor".equals(option)) {
         String name = "";
-        if (consumeIdentifier().equals("NamedConstructor")) {
+        if (option.equals("NamedConstructor")) {
           consume('=');
           name = consumeIdentifier();
         }
         Operation c = new Operation(name, null);
+        c.setDocumentationProvider(lib.getDocumentationProvider());
         if (tokenizer.ttype == '(') {
           parseParameterList(c);
           if (result == null) {
@@ -424,12 +434,10 @@ public class IdlParser {
             result.merge(model, c);
           }
         }
-        if (tokenizer.ttype != ',') {
-          break;
-        }
-        consume(',');
+      } else {
+        throw new RuntimeException("Unrecognized option: " + option);
       }
-    }
+    } while(tokenizer.ttype == ',');
     consume(']');
     
     if ("partial".equals(tokenizer.sval)) {
@@ -451,7 +459,8 @@ public class IdlParser {
       }
       
     } else {
-      throw new RuntimeException("interface of callback expected, got: " + tokenizer.sval);
+      throw new RuntimeException(
+          "interface, callback or exception expected, got: " + tokenizer.sval);
     }
   }
 
@@ -466,6 +475,7 @@ public class IdlParser {
   }
 
   private void parseParameterList(Operation op) {
+    op.setDocumentationProvider(lib.getDocumentationProvider());
     consume('(');
     while(tokenizer.ttype != ')') {
       parseOptions();

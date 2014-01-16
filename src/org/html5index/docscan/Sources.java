@@ -1,11 +1,12 @@
 package org.html5index.docscan;
 
+import org.html5index.docscan.Html5SpecScan.IdStyle;
 import org.html5index.model.DocumentationProvider;
 
 public class Sources {
   public static final DocumentationProvider[] SOURCES = {
     new EcmascriptDomScan(),
-    new Html5DocScan("DOM", "http://dom.spec.whatwg.org/",
+    new Html5SpecScan("DOM", "http://dom.spec.whatwg.org/",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/dom.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/elements.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/semantics.html",
@@ -25,29 +26,44 @@ public class Sources {
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/association-of-controls-and-forms.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/interactive-elements.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/commands.html"),
-    new Html5DocScan("Browser",
+    new Html5SpecScan("Browser",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/browsers.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/history.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/webappapis.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/timers.html"),
-    new Html5DocScan("Drag and Drop",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/dnd.html"),
-    new Html5DocScan("Sockets and Messaging",
+    new Html5SpecScan("Drag and Drop",
+        "http://www.whatwg.org/specs/web-apps/current-work/multipage/dnd.html")
+      .addTutorial("MDN Drag and Drop Tutorial", "https://developer.mozilla.org/en-US/docs/DragDrop/Drag_and_Drop")
+      .addTutorial("HTML 5 Rocks Drag and Drop Tutorial", "http://www.html5rocks.com/en/tutorials/dnd/basics/"),
+    new Html5SpecScan("Web Sockets and Messaging",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/network.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/web-messaging.html"),
-    new Html5DocScan("Audio and Video", 
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-video-element.html"),
-    new Html5DocScan("Offline", 
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/offline.html"),
-    new Html5DocScan("Canvas", 
+        "http://www.whatwg.org/specs/web-apps/current-work/multipage/web-messaging.html")
+      .addTutorial("Treehouse Websocket Introduction", "http://blog.teamtreehouse.com/an-introduction-to-websockets")
+      .addTutorial("HTML 5 Rocks Websocket Tutorial", "http://www.html5rocks.com/en/tutorials/websockets/basics/"),
+    new Html5SpecScan("Media", 
+        "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-video-element.html")
+      .addTutorial("HTML 5 Rocks Video Tutorial", "http://www.html5rocks.com/en/tutorials/video/basics/")
+      .addTutorial("MDN: Using HTML5 Video and Audio", "https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Using_HTML5_audio_and_video"),
+    new Html5SpecScan("Offline", 
+        "http://www.whatwg.org/specs/web-apps/current-work/multipage/offline.html")
+      .addTutorial("HTML 5 Rocks AppCache Tutorial", "http://www.html5rocks.com/en/tutorials/appcache/beginner/"),
+    new Html5SpecScan("Canvas", 
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-canvas-element.html")
       .addTutorial("MDN Canvas Tutorial", "https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Canvas_tutorial"),
-    new Html5DocScan("Web Workers", 
+    new Html5SpecScan("Web Workers", 
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/workers.html")
       .addTutorial("MDN Web Worker Tutorial", "https://developer.mozilla.org/en-US/docs/Web/Guide/Performance/Using_web_workers")
       .addTutorial("HTML 5 Rocks Web Worker Tutorial", "http://www.html5rocks.com/en/tutorials/workers/basics/"),
-    new Html5DocScan("Web Storage",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/webstorage.html")
+    new Html5SpecScan("Web Storage",
+        "http://www.whatwg.org/specs/web-apps/current-work/multipage/webstorage.html"),
+    new Html5SpecScan("File API", IdStyle.FILE_API, "http://www.w3.org/TR/FileAPI/")
+      .addTutorial("HTML 5 Rocks File Tutorial", "http://www.html5rocks.com/en/tutorials/file/dndfiles/")
+      .addTutorial("Treehouse FileReader Tutorial", "http://blog.teamtreehouse.com/reading-files-using-the-html5-filereader-api"),
+    new Html5SpecScan("File System API", IdStyle.FILE_SYSTEM_API, "http://www.w3.org/TR/file-system-api/")
+      .addTutorial("HTML 5 Rocks File Tutorial", "http://www.html5rocks.com/en/tutorials/file/filesystem/"),
+    new Html5SpecScan("Fullscreen", "http://www.w3.org/TR/fullscreen/")
+      .addTutorial("MDN Fullscreen Tutorial", "https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/Using_full_screen_mode")
+      .addTutorial("David Walsch's Fullscreen Tutorial", "http://davidwalsh.name/fullscreen"),
   };
 }

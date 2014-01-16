@@ -171,7 +171,7 @@ public class Tokenizer {
 
     if (ttype == '0' && pos < len && expr.charAt(pos) == 'x') {
       pos++;
-      sb.setLength(0);
+      sb.append('x');
       while (pos < len) {
         char c = expr.charAt(pos);
         if ((c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F')) {
@@ -180,7 +180,7 @@ public class Tokenizer {
         sb.append(c);
         pos++;
       }
-      nval = Long.parseLong(sb.toString(), 16);
+      nval = Long.parseLong(sb.substring(2), 16);
     } else {
       boolean seenE = false;
       while (pos < len) {
