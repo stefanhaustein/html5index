@@ -419,6 +419,14 @@ public class Generator {
       writer.markup("</a>");
     }
     writer.markup("</p><hr>\n");
+    
+    writer.markup("<script async src='//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'></script>");
+    writer.markup("<!-- about -->");
+    writer.markup("<ins class='adsbygoogle'");
+    writer.markup("     style='display:inline-block;width:728px;height:90px'");
+    writer.markup("     data-ad-client='ca-pub-2730368453635186'");
+    writer.markup("     data-ad-slot='5067641553'></ins>");
+    writer.markup("<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>");
   }
   
   void writeParams(HtmlWriter writer, Operation operation) throws IOException {

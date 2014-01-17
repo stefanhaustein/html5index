@@ -4,10 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
 import org.html5index.model.Artifact;
-import org.html5index.model.DocumentationProvider;
 import org.html5index.model.Member;
 import org.html5index.model.Operation;
 import org.html5index.model.Parameter;
@@ -18,7 +16,11 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-public class Html5SpecScan implements DocumentationProvider {
+
+/**
+ * Supports multiple sources; IDL is embedded.
+ */
+public class Html5SpecScan extends AbstractSpecScan {
   
   enum IdStyle {
     FILE_API, FILE_SYSTEM_API, WHATWG
@@ -29,7 +31,6 @@ public class Html5SpecScan implements DocumentationProvider {
   final Map<String, String[]> definitions = new HashMap<String, String[]>();
   final IdStyle idStyle;
   StringBuilder idl = new StringBuilder();
-  Map<String, String> tutorials = new TreeMap<String,String>();
   
   static final String[] ID_PREFIX = {"", "dom-", "handler-", "api-"};
   
@@ -200,10 +201,6 @@ public class Html5SpecScan implements DocumentationProvider {
     return urls;
   }
   
-  public Map<String,String> getTutorials() {
-    return tutorials;
-  }
-  
   static boolean isInside(Node node, String name) {
     while (node != null) {
       if (node.getNodeName().equals(name)) {
@@ -276,12 +273,6 @@ public class Html5SpecScan implements DocumentationProvider {
         definitions.put(id, new String[]{url, HtmlWriter.summary(text)});
       }
     }
-    System.out.println(definitions.keySet());
   }
   
-  
-  Html5SpecScan addTutorial(String title, String url) {
-    tutorials.put(title, url);
-    return this;
-  }
 }

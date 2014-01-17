@@ -216,31 +216,31 @@ public class IdlParser {
       consumeIdentifier();
     }
     
+    Type type;
     if (name.equals("sequence")) {
       consume('<');
       Type baseType = parseType();
       consume('>');
-      return new Type("sequence<" + baseType.getName() + ">", Type.Kind.SEQUENCE, baseType);
-    }
-    
-    Type type = lib.getType(name);
-    if (type == null) {
-      type = model.getType(name);
+      type = new Type("sequence<" + baseType.getName() + ">", Type.Kind.SEQUENCE, baseType);
+    } else {
+      type = lib.getType(name);
       if (type == null) {
-        type = new Type(name);
-        model.addHiddenType(type);
+        type = model.getType(name);
+        if (type == null) {
+          type = new Type(name);
+          model.addHiddenType(type);
+        }
+      }
+      if (tokenizer.ttype == '?') {
+        type = new Type(type.getName() + "?", Type.Kind.NULLABLE, type);
+        tokenizer.nextToken();
+      }
+      if (tokenizer.ttype == '[') {
+        tokenizer.nextToken();
+        consume(']');
+        type = new Type(type.getName() + "[]", Type.Kind.ARRAY, type);
       }
     }
-
-    if (tokenizer.ttype == '?') {
-      type = new Type(type.getName() + "?", Type.Kind.NULLABLE, type);
-      tokenizer.nextToken();
-    }
-    if (tokenizer.ttype == '[') {
-      tokenizer.nextToken();
-      consume(']');
-      type = new Type(type.getName() + "[]", Type.Kind.ARRAY, type);
-    } 
     if (tokenizer.ttype == '?') {
       type = new Type(type.getName() + "?", Type.Kind.NULLABLE, type);
       tokenizer.nextToken();

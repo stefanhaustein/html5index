@@ -5,7 +5,8 @@ import org.html5index.model.DocumentationProvider;
 
 public class Sources {
   public static final DocumentationProvider[] SOURCES = {
-    new EcmascriptDomScan(),
+    new ExplicitIdlSpecScan("ECMAScript", 
+        "http://www.ecma-international.org/ecma-262/5.1/", "/idl/ecmascript.idl"),
     new Html5SpecScan("DOM", "http://dom.spec.whatwg.org/",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/dom.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/elements.html",
@@ -25,7 +26,8 @@ public class Sources {
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-button-element.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/association-of-controls-and-forms.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/interactive-elements.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/commands.html"),
+        "http://www.whatwg.org/specs/web-apps/current-work/multipage/commands.html")
+      .addTutorial("A dive into plain Javascript", "http://blog.adtile.me/2014/01/16/a-dive-into-plain-javascript/"),
     new Html5SpecScan("Browser",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/browsers.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/history.html",
@@ -65,5 +67,13 @@ public class Sources {
     new Html5SpecScan("Fullscreen", "http://www.w3.org/TR/fullscreen/")
       .addTutorial("MDN Fullscreen Tutorial", "https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/Using_full_screen_mode")
       .addTutorial("David Walsch's Fullscreen Tutorial", "http://davidwalsh.name/fullscreen"),
+    new ExplicitIdlSpecScan("Typed Arrays", 
+        "http://www.khronos.org/registry/typedarray/specs/latest/", 
+        "https://www.khronos.org/registry/typedarray/specs/latest/typedarray.idl")
+    .addTutorial("MDN Typed Arrays Tutorial", "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays")
+    .addTutorial("HTML 5 Rocks Typed Arrays Tutorial", "http://www.html5rocks.com/en/tutorials/webgl/typed_arrays/"),
+  //  new ExplicitIdlSpecScan("WebGL", 
+   //     "http://www.khronos.org/registry/webgl/specs/latest/1.0/", 
+   //     "https://www.khronos.org/registry/webgl/specs/latest/1.0/webgl.idl"),
   };
 }
