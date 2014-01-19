@@ -57,7 +57,7 @@ public class Tokenizer {
       return;
     }
     
-    if (pos == len) {
+    if (pos >= len) {
       ttype = TT_EOF;
       return;
     }

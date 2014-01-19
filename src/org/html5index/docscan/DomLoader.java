@@ -1,9 +1,16 @@
 package org.html5index.docscan;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -18,30 +25,63 @@ import org.xml.sax.InputSource;
 
 public class DomLoader {
   
-  public static InputStream openStream(String url) throws IOException {
-    InputStream is;
+  
+  public static BufferedReader openReader(String url) throws IOException {
     if (url.startsWith("/")) {
-      is = DomLoader.class.getResourceAsStream(url);
-    } else {
-      URLConnection con = new URL(url).openConnection();
-      con.setUseCaches(true);
-      is = con.getInputStream();
+      InputStream inputStream = DomLoader.class.getResourceAsStream(url);
+      return new BufferedReader(new InputStreamReader(inputStream, "utf-8"));
+    } 
+    String cacheName = url.replace(":", "").replace("/", "");
+    File cacheFile = new File("cache", cacheName);
+    if (cacheFile.exists()) {
+      return new BufferedReader(new InputStreamReader(new FileInputStream(cacheFile), "utf-8"));
     }
-    return new BufferedInputStream(is);
+      
+    URLConnection con = new URL(url).openConnection();
+    String contentType = con.getContentType();
+    String charSet = "ISO-8859-1";
+    if (contentType != null) {
+      for (String part: contentType.split(";")) {
+        part = part.trim();
+        if (part.startsWith("charset=")) {
+          charSet = part.substring(8);
+          break;
+        }
+      }
+    }
+    BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream(), charSet));
+    String text = loadText(reader);
+    reader.close();
+    
+    Writer writer = new OutputStreamWriter(new FileOutputStream(cacheFile), "utf-8");
+    writer.write(text);
+    writer.close();
+    
+    return new BufferedReader(new StringReader(text));
   }
 
   static String loadText(String url) throws IOException {
-    InputStream is = openStream(url);
-    byte[] buf = new byte [8192];
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    while (true) {
-      int count = is.read(buf);
-      if (count <= 0) {
-        break;
+    BufferedReader reader = openReader(url);
+    String result = loadText(reader);
+    reader.close();
+    return result;
+  }
+  
+  static String loadText(BufferedReader reader) throws IOException {
+    StringBuilder sb = new StringBuilder();
+    String line = reader.readLine();
+    if (line != null) {
+      sb.append(line);
+      while (true) {
+        line = reader.readLine();
+        if (line == null) {
+          break;
+        }
+        sb.append('\n');
+        sb.append(line);
       }
-      baos.write(buf,0, count);
     }
-    return new String(baos.toByteArray(), "UTF-8");
+    return sb.toString();
   }
   
   public static Document loadDom(String url) {
@@ -50,11 +90,11 @@ public class DomLoader {
     try {
       parser.setFeature(Parser.namespacesFeature, false);
       parser.setFeature(Parser.namespacePrefixesFeature, false);
-      InputStream is = openStream(url);
+      Reader reader = openReader(url);
       DOMResult result = new DOMResult();
       Transformer transformer = TransformerFactory.newInstance().newTransformer();
-      transformer.transform(new SAXSource(parser, new InputSource(is)), result);
-      is.close();
+      transformer.transform(new SAXSource(parser, new InputSource(reader)), result);
+      reader.close();
       return (Document) result.getNode();
     } catch (Exception e) {
       throw new RuntimeException(e);

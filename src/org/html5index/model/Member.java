@@ -7,6 +7,9 @@ public abstract class Member extends Artifact {
   protected Member(String name, Type type) {
     super(name);
     this.type = type;
+    if (type != null) {
+      type.addReference(this);
+    }
   }
 
   public Type getOwner() {
@@ -22,8 +25,7 @@ public abstract class Member extends Artifact {
   }
 
   public String getQualifiedName() {
-    return (nameQualifier == null ? owner.getQualifiedName() : 
-      getLibrary().getQualifiedName() + "/" + nameQualifier) + "." + name;
+    return owner.getQualifiedName() + "." + name;
   }
 
   public void setName(String name) {

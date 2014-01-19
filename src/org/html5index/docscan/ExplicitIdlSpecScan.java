@@ -12,10 +12,16 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+/**
+ * Used for the ECMAScript spec and Khronos specs. Khronos specs dynamically create
+ * the TOC (and the corresponding ids) at runtime.
+ */
 public class ExplicitIdlSpecScan extends AbstractSpecScan {
   String title;
-  String docUrl;
+  String specUrl;
   String idlUrl;
+  String specTitle;
+  int [] sectionNumber = new int[4];
 
   HashMap<String,String> index = new HashMap<String, String>();
   HashMap<String,String> summaries = new HashMap<String, String>();
@@ -24,11 +30,18 @@ public class ExplicitIdlSpecScan extends AbstractSpecScan {
   public ExplicitIdlSpecScan(String title, String docUrl, String idlUrl) {
     this.ecma = title.startsWith("ECMA");
     this.title = title;
-    this.docUrl = docUrl;
+    this.specUrl = docUrl;
     this.idlUrl = idlUrl;
     System.out.print("Fetching " + docUrl + "...");
     Document doc = DomLoader.loadDom(docUrl);
     System.out.println("Done.");
+    
+    specTitle = docUrl;
+    NodeList list = doc.getElementsByTagName("title");
+    if (list.getLength() > 0) {
+      specTitle = list.item(0).getTextContent();
+    }
+    
     scanHeadings(doc.getElementsByTagName(ecma ? "h1" : "*"));
   }
   
@@ -37,50 +50,65 @@ public class ExplicitIdlSpecScan extends AbstractSpecScan {
     for (int i = 0; i < list.getLength(); i++) {
       Element element = (Element) list.item(i);
       String name = element.getNodeName();
-      if (name.startsWith("h") && name.length() == 2 && !name.equals("hr")) {
-        scanHeading(element, currentType);
+      if (name.equals("h1") || name.equals("h2") || name.equals("h3") || name.equals("h4")) {
+        scanHeading(element, name.charAt(1) - 48, currentType);
       }
     }
     
     System.out.println("index: " + index);
   }
       
-  void scanHeading(Element h, String[] currentType) {
+  void scanHeading(Element h, int level, String[] currentType) {
+    if ("no-toc".equals(h.getAttribute("class"))) {
+      return;
+    }
     String text = h.getTextContent();
     if (text.length() == 0) {
       return;
     }
-    if (text.charAt(0) < '0' || text.charAt(0) > '9') {
-      text = "0 " + text;
-    }
-    String[] parts = text.split("\\s+");
-    if (parts.length < 2) {
-      return;
-    }
-    
-    System.out.println("heading parts: " + Arrays.toString(parts));
-    
-    String section = parts[0];
+
     String id;
+    String[] words = text.split("\\s+");
     if (ecma) {
+      int cut = text.indexOf(' ');
+      if (cut == -1) {
+        return;
+      }
+      String section = words[0];
       if (!section.startsWith("15.")) {
         return;
       } 
+      String[] tmp = new String[words.length - 1];
+      System.arraycopy(words, 1, tmp, 0, tmp.length);
+      words = tmp;
+      text = text.substring(cut + 1);
       id = "sec-" + section;
     } else {
-      id = h.getAttribute("id");
-      if (id == null) {
-        return;
+      sectionNumber[level - 1]++;
+      for (int i = level; i < sectionNumber.length; i++) {
+        sectionNumber[i] = 0;
       }
+      StringBuilder sb = new StringBuilder();
+      for (int i = 1; i < level; i++) {
+        if (i > 1) {
+          sb.append('.');
+        }
+        sb.append(sectionNumber[i]);
+      }
+      id = sb.toString();
     }
+    if (words.length == 0) {
+      return;
+    }
+    
     String key = null;
-    if (parts.length == 4 && parts[1].equals("The") && (parts[3].equals("Object") ||
-        parts[3].equals("Type"))) {
-      currentType[0] = key = parts[2];
-    } else if (parts.length == 3 && parts[2].equals("Objects")) {
-      currentType[0] = key = parts[1];
-    } else if (parts.length == 2 || parts[2].startsWith("(")) {
-      key = parts[1].replace(".prototype", "");
+    if (words.length == 3 && words[0].equals("The") && (words[2].equals("Object") ||
+        words[2].equals("Type"))) {
+      currentType[0] = key = words[1];
+    } else if (words.length == 2 && words[1].equals("Objects")) {
+      currentType[0] = key = words[0];
+    } else if (words.length == 1 || words[1].startsWith("(")) {
+      key = words[0].replace(".prototype", "");
       int cut = key.indexOf("(");
       if (cut != -1) {
         key = key.substring(0, cut);
@@ -90,7 +118,7 @@ public class ExplicitIdlSpecScan extends AbstractSpecScan {
       } else if (key.indexOf(".") == -1 && (Character.isLowerCase(key.charAt(0))) ||
           key.toUpperCase().equals(key) || key.equals("NaN") || 
           key.equals("Infinity")) {
-        if (section.startsWith("15.10.7.")) {
+        if (id.startsWith("sec-15.10.7.")) {
           key = "RexExp." + key;
         } else {
           key = currentType[0] + "." + key;
@@ -98,7 +126,6 @@ public class ExplicitIdlSpecScan extends AbstractSpecScan {
       }
     }
     if (key != null) {
-      System.out.println(key + ": " + index);
       index.put(key, id);
       Node next = h.getNextSibling();
       while (next != null && !(next instanceof Element)) {
@@ -140,7 +167,7 @@ public class ExplicitIdlSpecScan extends AbstractSpecScan {
       System.out.println("not found: " + key);
       return null;
     }
-    return docUrl + "#" + id;
+    return specUrl + "#" + id;
   }
 
   @Override
@@ -153,7 +180,7 @@ public class ExplicitIdlSpecScan extends AbstractSpecScan {
   }
 
   @Override
-  public Iterable<String> getUrls() {
-    return Collections.singleton(docUrl);
+  public Iterable<String[]> getUrls() {
+    return Collections.singleton(new String[]{specUrl, specTitle});
   }
 }

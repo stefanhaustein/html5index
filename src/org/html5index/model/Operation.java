@@ -14,6 +14,7 @@ public class Operation extends Member {
   public void addParameter(Parameter param) {
     parameters.add(param);
     param.owner = this;
+    param.getType().addReference(this);
   }
 
   public void setBody(String body) {

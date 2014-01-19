@@ -3,6 +3,7 @@ package org.html5index.idl;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.html5index.model.DocumentationProvider;
 import org.html5index.model.Library;
 import org.html5index.model.Model;
 import org.html5index.model.Operation;
@@ -17,10 +18,12 @@ public class IdlParser {
   Tokenizer tokenizer;
   Model model;
   Library lib;
+  DocumentationProvider documentationProvider;
   
   public IdlParser(Model model, Library lib, String idl) {
     this.model = model;
     this.lib = lib;
+    this.documentationProvider = lib.getDocumentationProvider();
     tokenizer = new Tokenizer(idl);
   }
  
@@ -32,10 +35,12 @@ public class IdlParser {
     }
     if (type == null) {
       type = new Type(name, kind);
+      lib.addType(type);
+      documentationProvider.addDocumentation(type);
     } else {
       type.setKind(kind);
+      lib.addType(type);
     }
-    lib.addType(type);
     return type;
   }
   
@@ -43,17 +48,22 @@ public class IdlParser {
     //consume(Tokenizer.TT_WORD, "interface");
     tokenizer.nextToken();
     Type type;
-    String specKey = null;
     type = parseNewTypeName(Type.Kind.CLASS);
     if (constructor != null) {
       constructor.setName(type.getName());
       type.setConstructor(constructor);
+      documentationProvider.addDocumentation(constructor);
     }
     
     if (tokenizer.ttype == ':' || tokenizer.sval.equals("extends")) { // DOM spec error?
       tokenizer.nextToken();
       Type superType = parseType();
       type.setSuperType(superType);
+    } else if (tokenizer.sval.equals("implements")) {
+      tokenizer.nextToken();
+      Type base = parseType();
+      type.addType(base);
+      base.addImplemenetedBy(type);
     }
     
     if (tokenizer.ttype == ';') {
@@ -70,31 +80,37 @@ public class IdlParser {
         consumeIdentifier();
         owner = owner.getMetaType();
       }
-      String sval = tokenizer.sval;
-      if ("stringifier".equals(sval)) {
+      if ("stringifier".equals(tokenizer.sval)) {
         consumeIdentifier();
-        consume(';');
-      } else if ("readonly".equals(sval) || "attribute".equals(sval)) {
+        if (tokenizer.ttype == ';') {
+          consume(';');
+          continue;
+        }
+      } 
+      String sval = tokenizer.sval;
+      if ("readonly".equals(sval) || "attribute".equals(sval)) {
         Property property = parseProperty();
-        property.setNameQualifier(specKey);
         owner.addProperty(property);
+        documentationProvider.addDocumentation(property);
       } else if ("const".equals(sval)) {
         Property c = parseConst();
-        c.setNameQualifier(specKey);
         type.getMetaType().addProperty(c);
+        documentationProvider.addDocumentation(c);
       } else {
         Operation operation = parseOperation();
         Operation old = owner.getOperation(operation.getName());
-        operation.setNameQualifier(specKey);
         if (old != null) {
           old.merge(model, operation);
         } else {
           owner.addOperation(operation);
+          documentationProvider.addDocumentation(operation);
         }
       }
     }
     consume('}');
-    consume(';');
+    if (tokenizer.ttype == ';') {
+      consume(';');
+    }
     return type;
   }
   
@@ -110,9 +126,7 @@ public class IdlParser {
       tokenizer.nextToken();
     }
     consume(';');
-    Property property = new Property(name, type, true, sb.toString().trim());
-    property.setDocumentationProvider(lib.getDocumentationProvider());
-    return property;
+    return new Property(name, type, true, sb.toString().trim());
   }
 
   private Property parseProperty() {
@@ -125,9 +139,7 @@ public class IdlParser {
     String name = tokenizer.sval;
     consume(Tokenizer.TT_WORD);
     consume(';');
-    Property property = new Property(name, propertyType, false, null);
-    property.setDocumentationProvider(lib.getDocumentationProvider());
-    return property;
+    return new Property(name, propertyType, false, null);
   }
  
   private Operation parseOperation() {
@@ -319,7 +331,7 @@ public class IdlParser {
     if (tokenizer.ttype == ':') {
       tokenizer.nextToken();
       type.setSuperType(parseType());
-    }
+    } 
     consume('{');
     do {
       Type fieldType = parseType();
@@ -336,8 +348,8 @@ public class IdlParser {
         value = sb.toString();
       }
       Property property = new Property(fieldName, fieldType, false, value);
-      property.setDocumentationProvider(lib.getDocumentationProvider());
       type.addProperty(property);
+      documentationProvider.addDocumentation(property);
       consume(';');
     } while (tokenizer.ttype != '}');
     consume('}');
@@ -372,11 +384,15 @@ public class IdlParser {
     
     while(tokenizer.ttype != '}' && tokenizer.ttype != Tokenizer.TT_EOF) {
       if (tokenizer.sval.equals("const")) {
-        type.getMetaType().addProperty(parseConst());
+        Property constant = parseConst();
+        type.getMetaType().addProperty(constant);
+        documentationProvider.addDocumentation(constant);
       } else {
         Type pType = parseType();
         String pName = consumeIdentifier();
-        type.addProperty(new Property(pName, pType, false, null));
+        Property property = new Property(pName, pType, false, null);
+        type.addProperty(property);
+        documentationProvider.addDocumentation(property);
         consume(';');
       }
     }
@@ -425,7 +441,6 @@ public class IdlParser {
           name = consumeIdentifier();
         }
         Operation c = new Operation(name, null);
-        c.setDocumentationProvider(lib.getDocumentationProvider());
         if (tokenizer.ttype == '(') {
           parseParameterList(c);
           if (result == null) {
@@ -475,7 +490,6 @@ public class IdlParser {
   }
 
   private void parseParameterList(Operation op) {
-    op.setDocumentationProvider(lib.getDocumentationProvider());
     consume('(');
     while(tokenizer.ttype != ')') {
       parseOptions();

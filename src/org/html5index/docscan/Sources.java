@@ -1,6 +1,5 @@
 package org.html5index.docscan;
 
-import org.html5index.docscan.Html5SpecScan.IdStyle;
 import org.html5index.model.DocumentationProvider;
 
 public class Sources {
@@ -59,21 +58,28 @@ public class Sources {
       .addTutorial("HTML 5 Rocks Web Worker Tutorial", "http://www.html5rocks.com/en/tutorials/workers/basics/"),
     new Html5SpecScan("Web Storage",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/webstorage.html"),
-    new Html5SpecScan("File API", IdStyle.FILE_API, "http://www.w3.org/TR/FileAPI/")
+    new Html5SpecScan("File API", "http://www.w3.org/TR/FileAPI/",
+        "http://www.w3.org/TR/file-writer-api/")
       .addTutorial("HTML 5 Rocks File Tutorial", "http://www.html5rocks.com/en/tutorials/file/dndfiles/")
       .addTutorial("Treehouse FileReader Tutorial", "http://blog.teamtreehouse.com/reading-files-using-the-html5-filereader-api"),
-    new Html5SpecScan("File System API", IdStyle.FILE_SYSTEM_API, "http://www.w3.org/TR/file-system-api/")
+    new Html5SpecScan("File System API", "http://www.w3.org/TR/file-system-api/")
       .addTutorial("HTML 5 Rocks File Tutorial", "http://www.html5rocks.com/en/tutorials/file/filesystem/"),
     new Html5SpecScan("Fullscreen", "http://www.w3.org/TR/fullscreen/")
       .addTutorial("MDN Fullscreen Tutorial", "https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/Using_full_screen_mode")
       .addTutorial("David Walsch's Fullscreen Tutorial", "http://davidwalsh.name/fullscreen"),
+    new Html5SpecScan("Selectors", "http://www.w3.org/TR/selectors-api/"),
+    new Html5SpecScan("Shadow DOM", "http://www.w3.org/TR/shadow-dom/"),
+    new Html5SpecScan("CSS Object Model", "http://www.w3.org/TR/cssom/"),
     new ExplicitIdlSpecScan("Typed Arrays", 
         "http://www.khronos.org/registry/typedarray/specs/latest/", 
         "https://www.khronos.org/registry/typedarray/specs/latest/typedarray.idl")
     .addTutorial("MDN Typed Arrays Tutorial", "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays")
     .addTutorial("HTML 5 Rocks Typed Arrays Tutorial", "http://www.html5rocks.com/en/tutorials/webgl/typed_arrays/"),
-  //  new ExplicitIdlSpecScan("WebGL", 
-   //     "http://www.khronos.org/registry/webgl/specs/latest/1.0/", 
-   //     "https://www.khronos.org/registry/webgl/specs/latest/1.0/webgl.idl"),
+   new ExplicitIdlSpecScan("WebGL", 
+       "http://www.khronos.org/registry/webgl/specs/latest/1.0/", 
+       "https://www.khronos.org/registry/webgl/specs/latest/1.0/webgl.idl")
+    .addTutorial("HTML 5 Rocks: WebGL Fundamentals", "http://www.html5rocks.com/en/tutorials/webgl/webgl_fundamentals/")
+    .addTutorial("MDN: Getting Started with WebGL", "https://developer.mozilla.org/en-US/docs/Web/WebGL/Getting_started_with_WebGL")
+    .addTutorial("Learning WebGL: The Lessons", "http://learningwebgl.com/blog/?page_id=1217"),
   };
 }

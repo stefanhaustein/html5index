@@ -21,26 +21,15 @@ import org.w3c.dom.NodeList;
  * Supports multiple sources; IDL is embedded.
  */
 public class Html5SpecScan extends AbstractSpecScan {
-  
-  enum IdStyle {
-    FILE_API, FILE_SYSTEM_API, WHATWG
-  }
-  
   final String title;
-  final List<String> urls = new ArrayList<String>();
+  final List<String[]> urls = new ArrayList<String[]>();
   final Map<String, String[]> definitions = new HashMap<String, String[]>();
-  final IdStyle idStyle;
   StringBuilder idl = new StringBuilder();
   
   static final String[] ID_PREFIX = {"", "dom-", "handler-", "api-"};
-  
-  Html5SpecScan(String title, String... urls) {
-    this(title, IdStyle.WHATWG, urls);
-  }
 
-  Html5SpecScan(String title, IdStyle idStyle, String... urls) {
+  Html5SpecScan(String title, String... urls) {
     this.title = title;
-    this.idStyle = idStyle;
     for (String url: urls) {
       fetch(url);
     }
@@ -68,71 +57,65 @@ public class Html5SpecScan extends AbstractSpecScan {
     return definitions.containsKey(key);
   }
   
-  /** Guess the matching id for the artifact based on the keys available */
-  private String getKey(Artifact artifact) {
-    if (idStyle == IdStyle.FILE_API) {
-      // File Spec style
-      String key = "dfn-" + (artifact.getName().equals(artifact.getName().toUpperCase()) ?
-          artifact.getName().toLowerCase() : artifact.getName());
-      if (definitions.containsKey(key)) {
-        return key;
-      }
-      if (artifact instanceof Type) {
-        key = artifact.getName().toLowerCase();
-        if (definitions.containsKey(key)) {
-          return key;
-        }
-        key += "-section";
-        if (definitions.containsKey(key)) {
-          return key;
-        }
-        key = "idl-def-" + artifact.getName().toLowerCase();
-        if (definitions.containsKey(key)) {
-          return key;
-        }
-      }
-      return null;
-    }
+  private final String[] TYPE_ID_PREFIX = {"the-", "widl-", "idl-def-", ""};
+  private final String[] TYPE_ID_SUFFIX = {"-interface", "-section", ""};
 
-    if (idStyle == IdStyle.FILE_SYSTEM_API) {
-      if (artifact instanceof Member) {
-        StringBuilder sb = new StringBuilder("widl-");
-        Member m = (Member) artifact;
-        sb.append(typeName(m.getOwner()));
+  private String getTypeKey(Type type) {
+    for (String prefix: TYPE_ID_PREFIX) {
+      for (String suffix: TYPE_ID_SUFFIX) {
+        String key = prefix + type.getName() + suffix;
+        if (isValidKey(key)) {
+          return key;
+        }
+        key = key.toLowerCase();
+        if (isValidKey(key)) {
+          return key;
+        }
+      }
+    }
+    return null;
+  }
+  
+  private String getMemberKey(Member member) {
+    // File API
+    String key = "dfn-" + member.getName();
+    if (isValidKey(key)) {
+      return key;
+    }
+    // File Writer, File System
+    key = key.toLowerCase();
+    if (isValidKey(key)) {
+      return key;
+    }
+    StringBuilder sb = new StringBuilder("widl-");
+    sb.append(typeName(member.getOwner()));
+    sb.append('-');
+    sb.append(member.getName());
+    if (member instanceof Operation) {
+      sb.append('-');
+      sb.append(typeName(member.getType()).replace(' ', '-'));
+      Operation op = (Operation) member;
+      for (Parameter p: op.getParameters()) {
         sb.append('-');
-        sb.append(m.getName());
-        if (m instanceof Operation) {
-          sb.append('-');
-          sb.append(typeName(m.getType()));
-          Operation op = (Operation) m;
-          for (Parameter p: op.getParameters()) {
-            sb.append('-');
-            sb.append(typeName(p.getType()));
-            sb.append('-');
-            sb.append(p.getName());
-          }
-        }
-        String key = sb.toString();
-        if (isValidKey(key)) {
-          return key;
-        }
-      } else {
-        String key = "the-" + artifact.getName().toLowerCase() + "-interface";
-        if (isValidKey(key)) {
-          return key;
-        }
+        sb.append(typeName(p.getType()));
+        sb.append('-');
+        sb.append(p.getName());
       }
-      return null;
+    }
+    key = sb.toString();
+    if (isValidKey(key)) {
+      return key;
     }
 
-    // WHATWG Style identifiers
-    String key = artifact.getQualifiedName();
+    // WHATWG
+    key = member.getQualifiedName();
     int cut = key.indexOf("/");
     key = key.substring(cut + 1).replace(".", "-");
     key = key.replace("Meta<", "").replace(">", "");
 
+    // Type name map
     int dashIndex = key.indexOf('-');
-    if (key.startsWith("CanvasRenderingContext2d-") ||
+    if (key.startsWith("CanvasRenderingContext2D-") ||
         key.startsWith("CanvasDrawingStyles-") ||
         key.startsWith("CanvasPathMethods-")) {
       key = "context-2d" + key.substring(dashIndex);
@@ -153,18 +136,57 @@ public class Html5SpecScan extends AbstractSpecScan {
       key = key.toLowerCase();
     }
 
+    // Note: Key is lowercase from here on (set in the loop above).
     cut = key.indexOf('-');
     if (cut != -1 && isValidKey("dom" + key.substring(cut))) {
       return "dom" + key.substring(cut);
     }
     cut = key.indexOf("element-");
     if (key.startsWith("html") && cut != -1 && cut != 4) {
-      String k = "dom-" + key.substring(4, cut) + key.substring(cut + 7);
+      String elementName = key.substring(4, cut);
+      if (elementName.equals("tablerow")) {
+        elementName = "tr";
+      } else if (elementName.equals("tablecell") || elementName.equals("tabledatacell")) {
+        elementName = "td";
+      } else if (elementName.equals("tableheadercell")) {
+        elementName = "th";
+      }
+      
+      if (elementName.startsWith("table") && elementName.length() > 5) {
+        elementName = elementName.substring(5);
+      }
+      
+      String memberName = key.substring(cut + 8);
+      String k = "dom-" + elementName + "-" + memberName; 
+      if (isValidKey(k)) {
+        return k;
+      }
+      // Example: dom-textarea/input-selectiondirection
+      k = "dom-" + elementName + "/input-" + memberName;
+      if (isValidKey(k)) {
+        return k;
+      }
+      k = "dom-fe-" + memberName;
+      if (isValidKey(k)) {
+        return k;
+      }
+      k = "dom-fae-" + memberName;
       if (isValidKey(k)) {
         return k;
       }
     }
     
+    return null;
+  }
+  
+  /** Guess the matching id for the artifact based on the keys available */
+  private String getKey(Artifact artifact) {
+    if (artifact instanceof Type) {
+     return getTypeKey((Type) artifact);
+    } 
+    if (artifact instanceof Member) {
+      return getMemberKey((Member) artifact);
+    }
     return null;
   }
 
@@ -197,31 +219,31 @@ public class Html5SpecScan extends AbstractSpecScan {
 
 
   @Override
-  public Iterable<String> getUrls() {
+  public Iterable<String[]> getUrls() {
     return urls;
-  }
-  
-  static boolean isInside(Node node, String name) {
-    while (node != null) {
-      if (node.getNodeName().equals(name)) {
-        return true;
-      }
-      node = node.getParentNode();
-    }
-    return false;
   }
   
   void fetch(String url) {
     System.out.println(title + ": " + url);
-    urls.add(url);
     Document doc = DomLoader.loadDom(url);
     
+    String title = url;
+    NodeList list = doc.getElementsByTagName("title");
+    if (list.getLength() > 0) {
+      title = list.item(0).getTextContent();
+    }
+    
+    urls.add(new String[] {url, title});
+    
     // Read idl
-    NodeList list = doc.getElementsByTagName("pre");
+    list = doc.getElementsByTagName("pre");
     for (int i = 0; i < list.getLength(); i++) {
       Element pre = (Element) list.item(i);
-      if (pre.getAttribute("class").equals("idl")) {
-        String tc = pre.getTextContent();
+      String tc = pre.getTextContent().trim();
+      if (pre.getAttribute("class").equals("idl") || 
+          tc.startsWith("interface ") || tc.startsWith("partial interface")) {
+        tc = tc.replace("createFor()Blob", "createFor(Blob");
+        tc = tc.replace("attribute DOMString _camel-cased attribute", "attribute DOMString _camel_cased_attribute");
         idl.append(tc);
         idl.append("\n\n");
       }
@@ -257,7 +279,7 @@ public class Html5SpecScan extends AbstractSpecScan {
           if (sub.getLength() > 0) {
             text = sub.item(0).getTextContent();
           }
-        } else if (isInside(element, "pre") || name.startsWith("t")) {
+        } else if (AbstractSpecScan.isInside(element, "pre") || name.startsWith("t")) {
           text = "";
         } else if (name.equals("dt")) {
           Node dd = element.getNextSibling();
@@ -266,6 +288,16 @@ public class Html5SpecScan extends AbstractSpecScan {
           }
           if (dd != null) {
             text = dd.getTextContent();
+          } else {
+            text = "";
+          }
+        } else if (name.startsWith("h") && name.length() == 2) {
+          Node next = element.getNextSibling();
+          while (next != null && !(next instanceof Element)) {
+            next = next.getNextSibling();
+          }
+          if (next != null && next.getNodeName().equals("p")) {
+            text = next.getTextContent();
           } else {
             text = "";
           }

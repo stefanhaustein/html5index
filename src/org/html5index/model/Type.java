@@ -16,6 +16,7 @@ public class Type extends Artifact {
   private Kind kind = Kind.INTERFACE;
   private TreeMap<String,Property> properties = new TreeMap<String,Property>();
   private TreeMap<String,Operation> operations = new TreeMap<String,Operation>();
+  private TreeSet<Artifact> referencedBy = new TreeSet<Artifact>();
   private Operation constructor;
   Library owner;
   Type superType;
@@ -167,6 +168,10 @@ public class Type extends Artifact {
 
   public Kind getKind() {
     return kind;
+  }
+
+  public void addReference(Artifact artifact) {
+    this.referencedBy.add(artifact);
   }
 
 }
