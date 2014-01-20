@@ -5,6 +5,7 @@ import java.util.TreeMap;
 
 import org.html5index.model.Artifact;
 import org.html5index.model.DocumentationProvider;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 public abstract class AbstractSpecScan implements DocumentationProvider {
@@ -36,4 +37,19 @@ public abstract class AbstractSpecScan implements DocumentationProvider {
     return false;
   }
 
+  static Element getNextElementSibling(Node n) {
+    do {
+      n = n.getNextSibling();
+    } while (n != null && !(n instanceof Element));
+    return (Element) n;
+  }
+  
+  static Element getFirstElementChild(Node n) {
+    n = n.getFirstChild();
+    if (n == null || (n instanceof Element)) {
+      return (Element) n;
+    }
+    return getNextElementSibling(n);
+  }
+  
 }

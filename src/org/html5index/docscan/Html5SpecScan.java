@@ -282,12 +282,14 @@ public class Html5SpecScan extends AbstractSpecScan {
         } else if (AbstractSpecScan.isInside(element, "pre") || name.startsWith("t")) {
           text = "";
         } else if (name.equals("dt")) {
-          Node dd = element.getNextSibling();
-          while (dd != null && !dd.getNodeName().equals("dd")) {
-            dd = dd.getNextSibling();
-          }
-          if (dd != null) {
-            text = dd.getTextContent();
+          Element dd = getNextElementSibling(element);
+          if (dd != null && dd.getNodeName().equals("dd")) {
+            Element fc = getFirstElementChild(dd);
+            if (fc != null && fc.getNodeName().equals("p")) {
+              text = fc.getTextContent();
+            } else {
+              text = dd.getTextContent();
+            }
           } else {
             text = "";
           }

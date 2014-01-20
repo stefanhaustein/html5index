@@ -6,13 +6,18 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.html5index.docscan.Sources;
 import org.html5index.idl.IdlParser;
+import org.html5index.model.Artifact;
 import org.html5index.model.DocumentationProvider;
 import org.html5index.model.Library;
+import org.html5index.model.Member;
 import org.html5index.model.Model;
 import org.html5index.model.Operation;
 import org.html5index.model.Parameter;
@@ -65,9 +70,7 @@ public class Generator {
   public void writeModel() throws IOException {
     HtmlWriter writer = createWriter("Libraries");
 
-    writer.markup("<h3>Libraries</h3>\n");
-
-    writer.markup("<p><a href='All Types.html' target='lib'>All</a></p>");
+    writer.markup("<h3><a href='All Types.html' target='lib'>Libraries</a></h3>\n");
     
     writer.markup("\n<ul class='plain'>\n");
     for (Library lib: model.getLibraries()) {
@@ -132,10 +135,19 @@ public class Generator {
       writer.markup("<a href='").text(type.getLibrary().getName() + " - " + type.getName() + ".html").markup("' target='type'>");
       writer.text(type.getName());
       writer.markup("</a>");
+      
+      if (type.getKind() == Type.Kind.PARTIAL) {
+        writer.text(" (" + type.getLibrary().getName() + ")");
+      }
     }
   }
   
-
+  public String kindTitle(Type.Kind kind) {
+    String s = kind.toString().replace("_", "-<br>");
+    return s.charAt(0) + s.substring(1).toLowerCase();
+  }
+  
+  
   public void writeLibrary(Library lib) throws IOException {
     HtmlWriter writer = createWriter(lib.getName());
     writer.markup("<h3><a href='").text(lib.getName() + " - Overview.html").markup("' target='type'>");
@@ -173,37 +185,48 @@ public class Generator {
     } 
     writer.markup("</ul>");
 
-    writer.markup("<h3>Declared Types</h3>");
-    writer.markup("<table><tr>");
-    for (Type.Kind kind: Type.Kind.values()) {
+    Map<Type.Kind, List<Type>> kindMap = new TreeMap<Type.Kind, List<Type>>();
+    for (Type type: lib.getTypes()) {
+      Type.Kind kind = type.getKind();
       if (listKind(kind) > 0) {
-        writer.markup("<th>").text(kind.toString()).markup("</th>");
+        List<Type> types = kindMap.get(kind);
+        if (types == null) {
+          types = new ArrayList<Type>();
+          kindMap.put(kind, types);
+        }
+        types.add(type);
       }
     }
-    writer.markup("</tr><tr>");
-    for (Type.Kind kind: Type.Kind.values()) {
-      if (listKind(kind) > 0) {
+    
+    if (kindMap.size() > 0) {
+      writer.markup("<h3>Declared Types</h3>");
+      writer.markup("<table><tr>");
+      
+      for (Type.Kind kind: kindMap.keySet()) {
+        writer.markup("<th>" + kindTitle(kind) + "</th>");
+      }
+      writer.markup("</tr><tr>");
+      for (List<Type> list: kindMap.values()) {
         writer.markup("<td><ul class='plain'>");
-        for (Type type: lib.getTypes()) {
-          if (type.getKind() == kind) {
-            writer.markup("<li>");
-            writeLinkedType(writer, type);
-            writer.markup("</li>");
-          }
+        for (Type t: list) {
+          writer.markup("<li>");
+          writeLinkedType(writer, t);
+          writer.markup("</li>");
         }
         writer.markup("</ul></td>");
       }
+      writer.markup("</tr></table>");
     }
-    writer.markup("</tr></table>");
     closeWriter(writer);
   }
   
   int listKind(Type.Kind kind) {
-    if (kind == Type.Kind.GLOBAL || kind == Type.Kind.CLASS) {
+    if (kind == Type.Kind.GLOBAL || kind == Type.Kind.CLASS || kind == Type.Kind.PARTIAL ||
+        kind == Type.Kind.PARTIAL  || kind == Type.Kind.INTERFACE || 
+        kind == Type.Kind.CALLBACK_INTERFACE || kind == Type.Kind.ARRAY_OBJECT) {
       return 2;
     }
-    if (kind == Type.Kind.DICTIONARY || kind == Type.Kind.ENUM || 
-        kind == Type.Kind.INTERFACE) {
+    if (kind == Type.Kind.DICTIONARY || kind == Type.Kind.ENUM) {
       return 1;
     }
     return 0;
@@ -214,7 +237,11 @@ public class Generator {
     writer.markup("<h3><a href='about.html' target='type'>All Types</a></h3>");
     TreeSet<Type> all = new TreeSet<Type>();
     for (Library lib: model.getLibraries()) {
-      all.addAll(lib.getTypes());
+      for (Type t: lib.getTypes()) {
+        if (t.getKind() != Type.Kind.PARTIAL) {
+          all.add(t);
+        }
+      }
     }
     writeTypesIndex(writer, all);
 
@@ -277,7 +304,7 @@ public class Generator {
     if (url != null) {
       writer.markup("<a href='").text(url).markup("'>");
       writer.text(type.getName());
-      writer.markup("</a>");
+      writer.markup("</a>*");
     } else {
       writer.text(type.getName());
     }
@@ -285,6 +312,12 @@ public class Generator {
     writer.markup("</h2>\n");
     
     switch(type.getKind()) {
+    case PARTIAL:
+      writer.markup("<p>This page describes " + type.getLibrary().getName() + 
+          " extensions to the origial ");
+      writeLinkedType(writer, type.getSuperType());
+      writer.markup(" type.</p>");
+      break;
     case INTERFACE: 
       writer.markup(
           "<p>This type groups properties and / or operations together for documentation " +
@@ -295,12 +328,16 @@ public class Generator {
           "<p>This type represents a collection of object properties and does not have " +
           "an explicit Javascript representation.</p>");
       break;
+    case CALLBACK_INTERFACE:
+      writer.markup("<p>This type represents an interface implemented by the user for " +
+          "callback functionality.</p>");
+      break;
     case ENUM:
       writer.markup("<p>(Enum types still need to be documented here.)</p>");
       break;
     }
     
-    if (type.getSuperType() != null) {
+    if (type.getSuperType() != null && type.getKind() != Type.Kind.PARTIAL) {
       writer.markup("<p>");
       if (type.getKind() == Type.Kind.ALIAS) {
         writer.text("Alias for ");
@@ -324,9 +361,10 @@ public class Generator {
       }
       writer.markup(".</p>");
     }
+
     
     if (type.getImplementedBy().size() != 0) {
-      writer.markup("<p>").text("Implemented by ");
+      writer.markup("<p>").text(type.getKind() == Type.Kind.INTERFACE ? "Implemented by " : "Extended by ");
       boolean first = true;
       for (Type t: type.getImplementedBy()) {
         if (first) {
@@ -341,48 +379,126 @@ public class Generator {
     if (type.getDocumentationSummary() != null) {
       writer.markup("<p>").text(type.getDocumentationSummary()).markup("</p>");
     }
-    
-    ArrayList<Property> constants = new ArrayList<Property>();
-    ArrayList<Property> staticProperties = new ArrayList<Property>();
-    
-    for (Property p: type.getMetaType().getOwnProperties()) {
-      if (p.isConstant()) {
-        constants.add(p);
-      } else {
-        staticProperties.add(p);
-      }
-    }
 
     Collection<Property> properties = type.getOwnAndInterfaceProperties();
-    if (properties.size() != 0 || type.getMetaType().getOwnProperties().size() != 0) {
+    if (properties.size() != 0) {
+      ArrayList<Property> constants = new ArrayList<Property>();
+      ArrayList<Property> staticProperties = new ArrayList<Property>();
+      ArrayList<Property> regularProperties = new ArrayList<Property>();
+      
+      for (Property p: properties) {
+        if (p.hasModifier(Artifact.CONSTANT)) {
+          constants.add(p);
+        } else if (p.hasModifier(Artifact.STATIC)){
+          staticProperties.add(p);
+        } else {
+          regularProperties.add(p);
+        }
+      }
       writer.markup("<table class='members'><tr><th colspan='2'>Properties</th></tr>\n");
       writeProperties(writer, constants);
       writeProperties(writer, staticProperties);
-      writeProperties(writer, properties);
+      writeProperties(writer, regularProperties);
       writer.markup("</table>");
     }
     
-    if (type.getConstructor() != null) {
-      writer.markup("<table class='members'><tr><th>Constructor</th></tr>");
-      String constructorName = type.getConstructor().getName();
-      if (constructorName.equals("")) {
-        constructorName = type.getName();
+    if (type.getConstructors().size() > 0) {
+      writer.markup("<table class='members' id='");
+      writer.text(type.getName());
+      writer.markup("'><tr><th>Constructor</th></tr>");
+      for (Operation constructor: type.getConstructors()) {
+        if (constructor.getName().equals(type.getName())) {
+          writer.markup("<tr><td>");
+        } else {
+          writer.markup("<tr id='");
+          writer.text(constructor.getName());
+          writer.markup("'><td>");
+        }
+        writer.text(constructor.getName());
+        writeParams(writer, constructor);
+        writer.markup("</td></tr>");
       }
-      writer.markup("<tr><td>").text(constructorName);
-      writeParams(writer, type.getConstructor());
-      writer.markup("</td></tr></table>");
+      writer.markup("</table>");
     }
 
     Collection<Operation> operations = type.getOwnAndInterfaceOperations();
-    if (operations.size() != 0 || type.getMetaType().getOwnOperations().size() != 0) {
+    Collection<Operation> staticOperations = new ArrayList<Operation>();
+    Collection<Operation> regularOperations = new ArrayList<Operation>();
+    
+    for (Operation op: operations) {
+      if (op.hasModifier(Artifact.STATIC)) {
+        staticOperations.add(op);
+      } else {
+        regularOperations.add(op);
+      }
+    }
+    
+    if (operations.size() != 0 ) {
       writer.markup("<table class='members'><tr><th colspan='2'>Operations</th></tr>\n");
-      writeOperations(writer, type.getMetaType().getOwnOperations());
-      writeOperations(writer, operations);
+      writeOperations(writer, staticOperations);
+      writeOperations(writer, regularOperations);
       writer.markup("</table>");
     }
+    
+    Collection<Member> references = type.getReferences();
+    Map<Type,Set<Member>> refByType = new TreeMap<Type,Set<Member>>();
+    for (Member m: references) {
+      Type owner = m.getOwner();
+      if (owner != type && owner != null) {
+        Set<Member> refs = refByType.get(type);
+        if (refs == null) {
+          refs = new TreeSet<Member>();
+          refByType.put(owner, refs);
+        }
+        refs.add(m);
+      }
+    }
+    
+    if (refByType.size() > 0) {
+      writer.markup("<table class='members'><tr><th colspan='2'>Referenced by</th></tr>");
+      writer.markup("<tr>");
+      for (Map.Entry<Type, Set<Member>> e: refByType.entrySet()) {
+        Type owner = e.getKey();
+        writer.markup("<tr><td>");
+        writeLinkedType(writer, owner);
+        writer.markup("</td><td>");
+        boolean first = true;
+        for (Member m: e.getValue()) {
+          if (first) {
+            first = false;
+          } else {
+            writer.text(", ");
+          }
+          writer.markup("<a href='");
+          writer.text(owner.getLibrary().getName() + " - " + owner.getName() + ".html#" + m.getName());
+          writer.markup("'>");
+          writer.text(m.getName());
+          writer.markup("</a>");
+          if (m instanceof Operation) {
+            Operation op = (Operation) m;
+            writer.text(op.getParameters().size() == 0  ? "()" : "(...)");
+          }
+        }
+        writer.markup("</td></tr>");
+      }
+      writer.markup("</table>");
+    }
+    writer.markup("<p>");
+    writer.text("Links to the specification are marked with \"*\".");
+    writer.markup("</p>");
     closeWriter(writer);
   }
 
+  
+  void writeMemberLink(HtmlWriter writer, Member member) throws IOException {
+    writeLinkedType(writer, member.getOwner());
+    writer.text(".");
+    writer.text(member.getName());
+    if (member instanceof Operation) {
+      writer.text("()");
+    }
+  }
+  
   void writeAbout() throws IOException {
     HtmlWriter writer = createWriter("about");
     writeAboutContent(writer, true);
@@ -399,7 +515,8 @@ public class Generator {
     writer.text("Do you think ");
     writer.markup("<a href='http://vanilla-js.com/' target='_top'>vanilla.js</a>");
     writer.text(" is the best Javascript framework? ");
-    writer.text("Or have you always missed something like JavaDoc for Javascript ").markup("&mdash; ");
+    writer.markup("</p>\n<p>");
+    writer.text("Have you always missed something like JavaDoc for Javascript ").markup("&mdash; ");
     writer.text("something that is easy to navigate, up to date and not vendor specific?");
     writer.markup("</p>\n<p>");
     writer.text("This HTML 5 Javascript API index is automatically generated from the ");
@@ -407,6 +524,15 @@ public class Generator {
     writer.text("We parse the IDL code and link it up to matching headings, ");
     writer.text("creating a cross-reference that can be conveniently navigated using ");
     writer.text("the frames to the left or following the links below.");
+    writer.markup("</p>\n<p>");
+    writer.text("We don't get links and summaries for everything yet ");
+    writer.text("(some specs unfortunately don't use ids that can be inferred), but ");
+    writer.text("all the types and signatures should be there already.");
+    writer.markup("</p>\n<p>");
+    writer.text("Note that this index is most useful for looking up method names and ");
+    	writer.text("signatures if you are already familiar with HTML 5 and Javascript. ");
+    	writer.text("However, for getting started quickly, we also include links to ");
+    	writer.text("corresponding tutorials on the library overview pages.");
     writer.markup("</p>\n<p>");
     
     if (inFrame) {
@@ -468,11 +594,19 @@ public class Generator {
 
   public void writeOperations(HtmlWriter writer, Collection<Operation> operations) throws IOException {
     for (Operation operation: operations) {
-      writer.markup("<tr><td>");
+      writer.markup("<tr id='").text(operation.getName()).markup("'><td>");
       if (operation.isStatic()) {
         writer.text("static ");
       }
-      writeLinkedType(writer, operation.getType());
+      Type type = operation.getType();
+      if (type == null) {
+        writer.text("void");
+      } else if (type == operation.getOwner()) {
+        writer.text(type.getName());
+      } else {
+        writeLinkedType(writer, operation.getType());
+      }
+        
       writer.markup("</td><td>");
       
       String docUrl = operation.getDocumentationLink();
@@ -483,7 +617,7 @@ public class Generator {
       if (docUrl != null) {
         writer.markup("<a href='").text(docUrl).markup("'>");
         writer.text(operation.getName());
-        writer.markup("</a>");
+        writer.markup("</a>*");
       } else {
         writer.text(operation.getName());
       }
@@ -499,8 +633,8 @@ public class Generator {
   
   public void writeProperties(HtmlWriter writer, Iterable<Property> properties) throws IOException {
     for (Property property: properties) {
-      writer.markup("<tr><td>");
-      if (property.isConstant()) {
+      writer.markup("<tr id='").text(property.getName()).markup("'><td>");
+      if (property.hasModifier(Artifact.CONSTANT)) {
         writer.text("const ");
       } else if (property.isStatic()) {
         writer.text("static ");
@@ -516,7 +650,7 @@ public class Generator {
       if (docUrl != null) {
         writer.markup("<a href='").text(docUrl).markup("'>");
         writer.text(property.getName());
-        writer.markup("</a>");
+        writer.markup("</a>*");
       } else {
         writer.text(property.getName());
       }

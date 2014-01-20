@@ -57,20 +57,16 @@ public class Model {
  
   
   public Type getType(String name) {
-    if (name.startsWith("Meta<")) {
-      Type base = getType(name.substring(5, name.length() - 1));
-      return base == null ? null : base.getMetaType();
-    }
-    
     Type result = primitives.getType(name);
     if (result == null) {
       result = hidden.getType(name);
       if (result == null) {
         for (Library lib: libraries.values()) {
           result = lib.getType(name);
-          if (result != null) {
+          if (result != null && result.getKind() != Type.Kind.PARTIAL) {
             break;
           }
+          result = null;
         }
       }
     }

@@ -14,7 +14,7 @@ public class Library extends Artifact {
   private DocumentationProvider documentationProvider;
   
   public Library(String name, boolean readOnly, DocumentationProvider documentationProvider) {
-    super(name);
+    super(0, name);
     globals.owner = this;
     this.readOnly = readOnly;
     this.documentationProvider = documentationProvider;

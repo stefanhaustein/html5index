@@ -1,16 +1,12 @@
 package org.html5index.model;
 
 public class Parameter extends Artifact {
-  public static final int OPTIONAL = 1;
-  public static final int VARIADIC = 2;
   Type type;
   Operation owner;
-  int modifiers;
   
-  public Parameter(String name, Type type, int modifiers) {
-    super(name);
+  public Parameter(int modifiers, Type type, String name) {
+    super(modifiers, name);
     this.type = type;
-    this.modifiers = modifiers;
   }
   
   

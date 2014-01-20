@@ -4,8 +4,8 @@ public abstract class Member extends Artifact {
   protected Type type;
   protected Type owner;
 
-  protected Member(String name, Type type) {
-    super(name);
+  protected Member(int modifiers, Type type, String name) {
+    super(modifiers, name);
     this.type = type;
     if (type != null) {
       type.addReference(this);

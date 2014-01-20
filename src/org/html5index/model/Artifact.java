@@ -3,13 +3,22 @@ package org.html5index.model;
 import org.html5index.util.HtmlWriter;
 
 public abstract class Artifact implements Comparable<Artifact> {
+  public static final int CONSTANT = 1;
+  public static final int CONSTRUCTOR = 2;
+  public static final int OPTIONAL = 4;
+  public static final int READ_ONLY = 8;
+  public static final int STATIC = 16;
+  public static final int VARIADIC = 32;
+
   protected String name;
   protected String documentation;
   protected String documentationSummary;
   protected String documentationUrl;
+  protected int modifiers;
 
-  protected Artifact(String name) {
+  protected Artifact(int modfifiers, String name) {
     this.name = name;
+    this.modifiers = modifiers;
   }
   
   public String getName() {
@@ -45,10 +54,6 @@ public abstract class Artifact implements Comparable<Artifact> {
     return name;
   }
   
-  public String getTitle() {
-    return "<b>" + HtmlWriter.htmlEscape(toString()) + "</b>";
-  }
-  
   public abstract Library getLibrary();
 
   public String getQualifiedName() {
@@ -69,4 +74,10 @@ public abstract class Artifact implements Comparable<Artifact> {
   public int compareTo(Artifact other) {
     return getName().compareToIgnoreCase(other.getName());
   }
+  
+  public boolean hasModifier(int modifier) {
+    return (modifiers & modifier) == modifier;
+  }
+  
+
 }

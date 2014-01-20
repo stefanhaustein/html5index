@@ -7,8 +7,8 @@ public class Operation extends Member {
   private ArrayList<Parameter> parameters = new ArrayList<Parameter>();
   private String body;
 
-  public Operation(String name, Type type) {
-    super(name, type);
+  public Operation(int modifiers, Type type, String name) {
+    super(modifiers, type, name);
   }
 
   public void addParameter(Parameter param) {
@@ -50,35 +50,6 @@ public class Operation extends Member {
     return parameters;
   }
 
-  public String getTitle() {
-    StringBuilder sb = new StringBuilder();
-    if (this != owner.getConstructor()) {
-      if (owner.metaTypeOf != null) {
-        sb.append("static ");
-      }
-      if (type == null) {
-        sb.append("void ");
-      } else {
-        sb.append(type.getLink());
-        sb.append(' ');
-      }
-    }
-    sb.append("<b>");
-    sb.append(name);
-    sb.append("</b>(");
-    boolean first = true;
-    for (Parameter param : getParameters()) {
-      if (first) {
-        first = false;
-      } else {
-        sb.append(", ");
-      }
-      sb.append(param.getTitle());
-    }
-    sb.append(")");
-    return sb.toString();
-  }
-
 
   private Parameter getParameterOrNull(int index) {
     return index < parameters.size() ? parameters.get(index) : null;
@@ -89,7 +60,7 @@ public class Operation extends Member {
       if (p1 == null) {
         p1 = p2;
       }
-      Parameter np = new Parameter(p1.getName(), p1.getType(), p1.getModifiers() | Parameter.OPTIONAL);
+      Parameter np = new Parameter(p1.getModifiers() | Parameter.OPTIONAL, p1.getType(), p1.getName());
       return np;
     }
 
@@ -101,7 +72,7 @@ public class Operation extends Member {
     if (t != p2.getType()) {
       t = model.getType("any");
     }
-    return new Parameter(name, t, p1.modifiers | p2.modifiers);
+    return new Parameter(p1.modifiers | p2.modifiers, t, name);
   }
     
   public void merge(Model model, Operation merge) {

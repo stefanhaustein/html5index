@@ -3,6 +3,7 @@ package org.html5index.idl;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.html5index.model.Artifact;
 import org.html5index.model.DocumentationProvider;
 import org.html5index.model.Library;
 import org.html5index.model.Model;
@@ -33,28 +34,34 @@ public class IdlParser {
     if (type == null) {
       type = model.getType(name);
     }
+    if (kind == Type.Kind.PARTIAL) {
+      if (type != null) {
+        if (type.getLibrary() == lib) {
+          return type;
+        }
+        Type newType = new Type(name, kind);
+        lib.addType(newType);
+        documentationProvider.addDocumentation(newType);
+        newType.setSuperType(type);
+        return newType;
+      } else {
+        kind = Type.Kind.CLASS;
+      }
+    }
     if (type == null) {
       type = new Type(name, kind);
       lib.addType(type);
       documentationProvider.addDocumentation(type);
-    } else {
-      type.setKind(kind);
-      lib.addType(type);
-    }
+    } 
+    type.setKind(kind);
+    lib.addType(type);
     return type;
   }
   
-  private Type parseInterface(Operation constructor) {
-    //consume(Tokenizer.TT_WORD, "interface");
+  private Type parseInterface(Kind kind) {
     tokenizer.nextToken();
     Type type;
-    type = parseNewTypeName(Type.Kind.CLASS);
-    if (constructor != null) {
-      constructor.setName(type.getName());
-      type.setConstructor(constructor);
-      documentationProvider.addDocumentation(constructor);
-    }
-    
+    type = parseNewTypeName(kind);
     if (tokenizer.ttype == ':' || tokenizer.sval.equals("extends")) { // DOM spec error?
       tokenizer.nextToken();
       Type superType = parseType();
@@ -75,10 +82,10 @@ public class IdlParser {
     while (tokenizer.ttype != '}') {
       parseOptions();
 
-      Type owner = type;
+      int modifiers = 0;
       if ("static".equals(tokenizer.sval)) {
         consumeIdentifier();
-        owner = owner.getMetaType();
+        modifiers |= Artifact.STATIC;
       }
       if ("stringifier".equals(tokenizer.sval)) {
         consumeIdentifier();
@@ -89,20 +96,20 @@ public class IdlParser {
       } 
       String sval = tokenizer.sval;
       if ("readonly".equals(sval) || "attribute".equals(sval)) {
-        Property property = parseProperty();
-        owner.addProperty(property);
+        Property property = parseProperty(modifiers);
+        type.addProperty(property);
         documentationProvider.addDocumentation(property);
       } else if ("const".equals(sval)) {
         Property c = parseConst();
-        type.getMetaType().addProperty(c);
+        type.addProperty(c);
         documentationProvider.addDocumentation(c);
       } else {
-        Operation operation = parseOperation();
-        Operation old = owner.getOperation(operation.getName());
+        Operation operation = parseOperation(modifiers);
+        Operation old = type.getOperation(operation.getName());
         if (old != null) {
           old.merge(model, operation);
         } else {
-          owner.addOperation(operation);
+          type.addOperation(operation);
           documentationProvider.addDocumentation(operation);
         }
       }
@@ -126,11 +133,12 @@ public class IdlParser {
       tokenizer.nextToken();
     }
     consume(';');
-    return new Property(name, type, true, sb.toString().trim());
+    return new Property(Property.CONSTANT, type, name, sb.toString().trim());
   }
 
-  private Property parseProperty() {
+  private Property parseProperty(int modifiers) {
     if (tokenizer.sval.equals("readonly")) {
+      modifiers |= Artifact.READ_ONLY;
       tokenizer.nextToken();
     }
     consume(Tokenizer.TT_WORD, "attribute");
@@ -139,10 +147,10 @@ public class IdlParser {
     String name = tokenizer.sval;
     consume(Tokenizer.TT_WORD);
     consume(';');
-    return new Property(name, propertyType, false, null);
+    return new Property(modifiers, propertyType, name, null);
   }
  
-  private Operation parseOperation() {
+  private Operation parseOperation(int modifiers) {
     StringBuilder special = new StringBuilder();
     while ("getter".equals(tokenizer.sval) || "setter".equals(tokenizer.sval) ||
         "deleter".equals(tokenizer.sval) || "creator".equals(tokenizer.sval) ||
@@ -165,7 +173,7 @@ public class IdlParser {
     } else {
       name = consumeIdentifier();
     }
-    Operation op = new Operation(name, type);
+    Operation op = new Operation(modifiers, type, name);
     parseParameterList(op);
     consume(';');
     return op;
@@ -289,16 +297,10 @@ public class IdlParser {
   public void parseModuleBody() {
     while(tokenizer.ttype != Tokenizer.TT_EOF && tokenizer.ttype != '}') {
       String sval = tokenizer.sval;
-      if (tokenizer.ttype == '[') {
-        parseWithOptions();
-      } else if ("dictionary".equals(sval)) {
-        parseDictionary();
-      } else if ("partial".equals(sval)) {
-        consumeIdentifier();
-      } else if ("callback".equals(sval)) {
-        parseCallback();
-      } else if ("interface".equals(sval) || "class".equals(sval)) {
-        parseInterface(null);
+      if (tokenizer.ttype == '[' || "dictionary".equals(sval) || "exception".equals(sval) ||
+          "partial".equals(sval) || "callback".equals(sval) || "interface".equals(sval) || 
+          "class".equals(sval)) {
+        parseClassifier();
       } else if ("typedef".equals(sval)) {
         parseTypedef();
       } else if ("valuetype".equals(sval)) {
@@ -307,8 +309,6 @@ public class IdlParser {
         parseModule();
       } else if ("const".equals(sval)) {
         lib.getGlobals().addProperty(parseConst());
-      } else if ("exception".equals(sval)) {
-        parseException();
       } else if ("enum".equals(sval)) {
         parseEnum();
       } else if (tokenizer.ttype == Tokenizer.TT_WORD) {
@@ -317,10 +317,9 @@ public class IdlParser {
         Type interfaceType = parseType();
         target.addType(interfaceType);
         interfaceType.addImplemenetedBy(target);
-        
         consume(';');
       } else {
-        fail("exception, interface, typedef, valuetype, module or const expected");
+        fail("dictionary, callback, exception, interface, typedef, valuetype, module or const expected");
       }
     }
   }
@@ -347,7 +346,7 @@ public class IdlParser {
         }
         value = sb.toString();
       }
-      Property property = new Property(fieldName, fieldType, false, value);
+      Property property = new Property(0, fieldType, fieldName, value);
       type.addProperty(property);
       documentationProvider.addDocumentation(property);
       consume(';');
@@ -385,12 +384,12 @@ public class IdlParser {
     while(tokenizer.ttype != '}' && tokenizer.ttype != Tokenizer.TT_EOF) {
       if (tokenizer.sval.equals("const")) {
         Property constant = parseConst();
-        type.getMetaType().addProperty(constant);
+        type.addProperty(constant);
         documentationProvider.addDocumentation(constant);
       } else {
         Type pType = parseType();
         String pName = consumeIdentifier();
-        Property property = new Property(pName, pType, false, null);
+        Property property = new Property(0, pType, pName, null);
         type.addProperty(property);
         documentationProvider.addDocumentation(property);
         consume(';');
@@ -401,81 +400,77 @@ public class IdlParser {
     return type;
   }
 
-  private void parseCallback() {
-    consumeIdentifier();
-    if ("interface".equals(tokenizer.sval)) {
-      parseInterface(null);
-    } else {
-      // TODO
+  private void parseClassifier() {
+    List<Operation> constructors = new ArrayList<Operation>();
+    Type.Kind kind = Type.Kind.CLASS;
+    if (tokenizer.ttype == '[') {
       do {
         tokenizer.nextToken();
-      } while (tokenizer.ttype != ';');
-      tokenizer.nextToken();
-    }
-  }
-  
-  private void parseWithOptions() {
-    // Precondition: on '[';
-    Operation result = null;
-    boolean global = false;
-    boolean noInterfaceObject = false;
-    do {
-      tokenizer.nextToken();
-      String option = consumeIdentifier();
-      if ("NoInterfaceObject".equals(option)) {
-        noInterfaceObject = true;
-      } else if ("Global".equals(option)) {
-        global = true;
-      } else if ("Callback".equals(option)) {
-        consume('=');
-        consumeIdentifier();
-      } else if ("ArrayClass".equals(option) || 
-          "TreatNonCallableAsNull".equals(option) ||
-          "OverrideBuiltins".equals(option) ||
-          "Unforgeable".equals(option) ||
-          "Supplemental".equals(option)) {
-      } else if ("Constructor".equals(option) || "NamedConstructor".equals(option)) {
-        String name = "";
-        if (option.equals("NamedConstructor")) {
-          consume('=');
-          name = consumeIdentifier();
-        }
-        Operation c = new Operation(name, null);
-        if (tokenizer.ttype == '(') {
-          parseParameterList(c);
-          if (result == null) {
-            result = c;
-          } else {
-            result.merge(model, c);
+        String option = consumeIdentifier();
+        if ("NoInterfaceObject".equals(option)) {
+          if (kind != Type.Kind.GLOBAL) {
+            kind = Type.Kind.INTERFACE;
           }
+        } else if ("Global".equals(option)) {
+          kind = Type.Kind.GLOBAL;
+        } else if ("Callback".equals(option)) {
+          consume('=');
+          consumeIdentifier();
+        } else if ("ArrayClass".equals(option) || 
+            "TreatNonCallableAsNull".equals(option) ||
+            "OverrideBuiltins".equals(option) ||
+            "Unforgeable".equals(option) ||
+            "Supplemental".equals(option)) {
+        } else if ("Constructor".equals(option) || "NamedConstructor".equals(option)) {
+          String name = "";
+          if (option.equals("NamedConstructor")) {
+            consume('=');
+            name = consumeIdentifier();
+          }
+          Operation c = new Operation(Artifact.CONSTRUCTOR, null, name);
+          if (tokenizer.ttype == '(') {
+            parseParameterList(c);
+          }
+          constructors.add(c);
+        } else {
+          throw new RuntimeException("Unrecognized option: " + option);
         }
-      } else {
-        throw new RuntimeException("Unrecognized option: " + option);
-      }
-    } while(tokenizer.ttype == ',');
-    consume(']');
-    
-    if ("partial".equals(tokenizer.sval)) {
-      tokenizer.nextToken();
+      } while(tokenizer.ttype == ',');
+      consume(']');
     }
-    if ("interface".equals(tokenizer.sval)) {
-      Type type = parseInterface(result);
-      if (global) {
-        type.setKind(Type.Kind.GLOBAL);
-      } else if (noInterfaceObject) {
-        type.setKind(Type.Kind.INTERFACE);
-      }
+    if ("partial".equals(tokenizer.sval)) {
+      kind = Type.Kind.PARTIAL;
+      tokenizer.nextToken();
     } else if ("callback".equals(tokenizer.sval)) {
-      parseCallback();
-    } else if ("exception".equals(tokenizer.sval)) {
-      Type type = parseException();
-      if (result != null) {
-        type.setConstructor(result);
+      tokenizer.nextToken();
+      if (!tokenizer.sval.equals("interface")) {
+        do {
+          tokenizer.nextToken();
+        } while (tokenizer.ttype != ';');
+        tokenizer.nextToken();
+        return;
       }
-      
+      kind = Type.Kind.CALLBACK_INTERFACE;
+    }
+    Type type = null;
+    if ("interface".equals(tokenizer.sval) || "class".equals(tokenizer.sval)) {
+      type = parseInterface(kind);
+    } else if ("exception".equals(tokenizer.sval)) {
+      type = parseException();
+    } else if ("dictionary".equals(tokenizer.sval)) {
+      parseDictionary();
     } else {
       throw new RuntimeException(
-          "interface, callback or exception expected, got: " + tokenizer.sval);
+          "dictionary, interface, callback or exception expected, got: " + tokenizer.sval);
+    }
+    if (type != null) {
+      for (Operation constructor: constructors) {
+        if (constructor.getName().isEmpty()) {
+          constructor.setName(type.getName());
+        }
+        type.addConstructor(constructor);
+        documentationProvider.addDocumentation(constructor);
+      }
     }
   }
 
@@ -511,7 +506,7 @@ public class IdlParser {
         tokenizer.nextToken();
       }
       String pName = consumeIdentifier();
-      Parameter parameter = new Parameter(pName, pType, modifiers);
+      Parameter parameter = new Parameter(modifiers, pType, pName);
       op.addParameter(parameter);
       
       if (tokenizer.ttype == '=') {
