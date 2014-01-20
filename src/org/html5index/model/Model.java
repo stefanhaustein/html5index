@@ -60,7 +60,7 @@ public class Model {
     Type result = primitives.getType(name);
     if (result == null) {
       result = hidden.getType(name);
-      if (result == null) {
+      if (result == null || result.getKind() == Type.Kind.PARTIAL) {
         for (Library lib: libraries.values()) {
           result = lib.getType(name);
           if (result != null && result.getKind() != Type.Kind.PARTIAL) {

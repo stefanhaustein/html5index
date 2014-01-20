@@ -16,12 +16,16 @@ public abstract class Artifact implements Comparable<Artifact> {
   protected String documentationUrl;
   protected int modifiers;
 
-  protected Artifact(int modfifiers, String name) {
+  protected Artifact(int modifiers, String name) {
     this.name = name;
     this.modifiers = modifiers;
   }
   
   public String getName() {
+    return name;
+  }
+  
+  public String getNameForCompare() {
     return name;
   }
   
@@ -72,7 +76,7 @@ public abstract class Artifact implements Comparable<Artifact> {
 
   @Override
   public int compareTo(Artifact other) {
-    return getName().compareToIgnoreCase(other.getName());
+    return getNameForCompare().compareToIgnoreCase(other.getNameForCompare());
   }
   
   public boolean hasModifier(int modifier) {

@@ -65,7 +65,7 @@ public class Sources {
       .addTutorial("HTML 5 Rocks: File Tutorial", "http://www.html5rocks.com/en/tutorials/file/dndfiles/")
       .addTutorial("Treehouse: FileReader Tutorial", "http://blog.teamtreehouse.com/reading-files-using-the-html5-filereader-api"),
     new Html5SpecScan("File System API", "http://www.w3.org/TR/file-system-api/")
-      .addTutorial("HTML 5 Rocks: File Tutorial", "http://www.html5rocks.com/en/tutorials/file/filesystem/"),
+      .addTutorial("HTML 5 Rocks: Exploring the FileSystem APIs", "http://www.html5rocks.com/en/tutorials/file/filesystem/"),
     new Html5SpecScan("Fullscreen", "http://www.w3.org/TR/fullscreen/")
       .addTutorial("MDN: Fullscreen Tutorial", "https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/Using_full_screen_mode")
       .addTutorial("David Walsch's Fullscreen Tutorial", "http://davidwalsh.name/fullscreen"),

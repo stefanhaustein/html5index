@@ -44,4 +44,9 @@ public abstract class Member extends Artifact {
   public void setType(Type type) {
     this.type = type;
   }
+  
+  @Override 
+  public String getNameForCompare() {
+    return owner == null ? name : (name + " (" + owner.getNameForCompare() + ")");
+  }
 }

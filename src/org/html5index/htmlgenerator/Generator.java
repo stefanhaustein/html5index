@@ -65,6 +65,7 @@ public class Generator {
     writeIndex();
     writeAbout();
     writeModel();
+    writeGlobalIndex();
   }
   
   public void writeModel() throws IOException {
@@ -282,6 +283,7 @@ public class Generator {
   }
   
   public void writeHeader(HtmlWriter writer, Library lib) throws IOException {
+    writer.markup("<div style='float:right'><small><a href='Global Index.html'>Global Index</a></small></div>");
     writer.markup("<small>");
     writer.markup("<a href='index.html' target='_top'>HTML5 JS API Index</a>");
     if (lib != null) {
@@ -290,6 +292,7 @@ public class Generator {
       writer.markup("</a></b>");
     }
     writer.markup("</small>");
+    
   }
   
   
@@ -469,15 +472,7 @@ public class Generator {
           } else {
             writer.text(", ");
           }
-          writer.markup("<a href='");
-          writer.text(owner.getLibrary().getName() + " - " + owner.getName() + ".html#" + m.getName());
-          writer.markup("'>");
-          writer.text(m.getName());
-          writer.markup("</a>");
-          if (m instanceof Operation) {
-            Operation op = (Operation) m;
-            writer.text(op.getParameters().size() == 0  ? "()" : "(...)");
-          }
+          writeMemberLink(writer, m);
         }
         writer.markup("</td></tr>");
       }
@@ -490,12 +485,16 @@ public class Generator {
   }
 
   
-  void writeMemberLink(HtmlWriter writer, Member member) throws IOException {
-    writeLinkedType(writer, member.getOwner());
-    writer.text(".");
-    writer.text(member.getName());
-    if (member instanceof Operation) {
-      writer.text("()");
+  void writeMemberLink(HtmlWriter writer, Member m) throws IOException {
+    Type owner = m.getOwner();
+    writer.markup("<a href='");
+    writer.text(owner.getLibrary().getName() + " - " + owner.getName() + ".html#" + m.getName());
+    writer.markup("'>");
+    writer.text(m.getName());
+    writer.markup("</a>");
+    if (m instanceof Operation) {
+      Operation op = (Operation) m;
+      writer.text(op.getParameters().size() == 0  ? "()" : "(...)");
     }
   }
   
@@ -506,7 +505,8 @@ public class Generator {
   }
   
   void writeAboutContent(HtmlWriter writer, boolean inFrame) throws IOException {
-    writer.markup("<div style='float:right;padding:10px'>");
+    writer.markup("<div style='float:right;padding:0 0 10px 10px;text-align:right'>");
+    writer.markup("<small><a href='Global Index.html'>Global Index</a></small><br><br>");
     writer.markup("<img src='http://www.w3.org/html/logo/downloads/HTML5_Logo_128.png' title='HTML 5 Logo by W3C'>");
     writer.markup("</div>");
     writer.markup("<h2>The HTML 5 Javascript API Index</h2>\n");
@@ -560,14 +560,15 @@ public class Generator {
     }
     writer.markup("</p><hr><center>\n");
     
-    writer.markup("<script async src='//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'></script>");
-    writer.markup("<!-- about -->");
-    writer.markup("<ins class='adsbygoogle'");
-    writer.markup("     style='display:inline-block;width:728px;height:90px'");
-    writer.markup("     data-ad-client='ca-pub-2730368453635186'");
-    writer.markup("     data-ad-slot='5067641553'></ins>");
-    writer.markup("<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>");
-    
+    if (inFrame) {
+      writer.markup("<script async src='//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'></script>");
+      writer.markup("<!-- about -->");
+      writer.markup("<ins class='adsbygoogle'");
+      writer.markup("     style='display:inline-block;width:728px;height:90px'");
+      writer.markup("     data-ad-client='ca-pub-2730368453635186'");
+      writer.markup("     data-ad-slot='5067641553'></ins>");
+      writer.markup("<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>");
+    }
     writer.markup("</center>");
   }
   
@@ -665,6 +666,65 @@ public class Generator {
     }
   }
 
+  public void writeGlobalIndex() throws IOException {
+    HtmlWriter writer = createWriter("Global Index");
+    writer.markup("<h2>Global Index</h2><p><b>");
+    
+    for (char c = 'A'; c <= 'Z'; c++) {
+      writer.markup("<a href='#" + c + "'>" + c + "</a> ");
+    }
+    writer.markup("</b></p>");
+    TreeSet<Artifact> index = new TreeSet<Artifact>();
+    
+    for (Library lib: model.getLibraries()) {
+      index.add(lib);
+      for (Type t: lib.getTypes()) {
+        if (t.getKind() == Type.Kind.PARTIAL) {
+          continue;
+        }
+        index.add(t);
+        for (Operation op: t.getOwnOperations()) {
+          index.add(op);
+        }
+        for (Property p: t.getOwnProperties()) {
+          index.add(p);
+        }
+      }
+    }
+    
+    char current = ' ';
+    boolean first = true;
+    for (Artifact a: index) {
+      String name = a.getName();
+      char fc = Character.toUpperCase(name.charAt(0));
+      if (fc != current) {
+        if (first) {
+          first = false;
+        } else {
+          writer.markup("</ul>");
+        }
+        writer.markup("<h2 id='").text(String.valueOf(fc)).markup("'>").text(String.valueOf(fc)).markup("</h2>");
+        writer.markup("<ul class='plain'>");
+        current = fc;
+      }
+      writer.markup("<li>");
+      if (a instanceof Type) {
+        writeLinkedType(writer, (Type) a);
+        writer.text(" (" + a.getLibrary().getName() + ")");
+      } else if (a instanceof Member) {
+        Member member = (Member) a;
+        writeMemberLink(writer, member);
+        writer.text(" (" + member.getOwner().getName() + ")");
+      } else if (a instanceof Library) {
+        writer.markup("<a href='").text(a.getName() + " - Overview.html");
+        writer.text(a.getName());
+        writer.markup("</a>");
+      }
+      writer.markup("</li>");
+    }
+    writer.markup("</ul>");
+    closeWriter(writer);
+  }
   
   
   public static void main(String[] args) throws IOException {

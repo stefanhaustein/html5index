@@ -185,5 +185,10 @@ public class Type extends Artifact {
     // TODO Auto-generated method stub
     return null;
   }
+  
+  @Override
+  public String getNameForCompare() {
+    return getLibrary() == null ? name : (name + " (" + getLibrary().getName() + ")");
+  }
 
 }
