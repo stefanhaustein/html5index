@@ -23,6 +23,7 @@ public class Type extends Artifact {
   Type superType;
   private List<Type> types = new ArrayList<Type>();
   private List<Type> implementedBy = new ArrayList<Type>();
+  private List<String> enumLiterals = new ArrayList<String>();
   
   public Type(String name, Kind kind) {
     this(name, kind, null);
@@ -34,6 +35,14 @@ public class Type extends Artifact {
     this.superType = baseType;
   }
 
+  public void addEnumLiteral(String value) {
+    enumLiterals.add(value);
+  }
+  
+  public Collection<String> getEnumLiterals() {
+    return enumLiterals;
+  }
+  
   public void addImplemenetedBy(Type type) {
     implementedBy.add(type);
   }

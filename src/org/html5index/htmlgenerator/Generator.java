@@ -331,7 +331,14 @@ public class Generator {
           "callback functionality.</p>");
       break;
     case ENUM:
-      writer.markup("<p>(Enum types still need to be documented here.)</p>");
+      writer.markup("<p>This type represents the following set of enum literals:</p>");
+      writer.markup("<ul>");
+      for (String s: type.getEnumLiterals()) {
+        writer.markup("<li>");
+        writer.text(s);
+        writer.markup("</li>");
+      }
+      writer.markup("</ul>");
       break;
     }
     
@@ -514,7 +521,7 @@ public class Generator {
     writer.text("HTML 5 specification documents by scanning them for IDL fragments. ");
     writer.text("The index generator parses the IDL code and link it up to matching headings, ");
     writer.text("creating a cross-reference that can be conveniently navigated using ");
-    writer.text("the frames to the left or following the links below.");
+    writer.text("the frames to the left* or following the links below.");
     writer.markup("</p>\n<p>");
     writer.text("Some links and summaries are still missing ");
     writer.text("(some specs unfortunately don't use ids that can be inferred), but ");
@@ -525,17 +532,7 @@ public class Generator {
     	writer.text("However, for getting started quickly, we also include links to ");
     	writer.text("corresponding tutorials on the library overview pages.");
     writer.markup("</p>\n<p>");
-    
-    if (inFrame) {
-      writer.text("This site relies on HTML frames. If you don't see the index of libraries ");
-      writer.text("and types to the left of this document, load the full frame set by ");
-      writer.text("following this ");
-      writer.markup("<a href='index.html' target='_top'>link</a>.</p>\n");
-    } else {
-      writer.text("This site relies on HTML frames, but your browser does not seem ");
-      writer.text("to support frames. You may want to try a different browser to ");
-      writer.text("view this site.");
-    }
+
     writer.markup("<h3>Covered Libraries</h3>\n<p>");
     
     boolean first = true;
@@ -560,7 +557,18 @@ public class Generator {
       writer.markup("     data-ad-slot='5067641553'></ins>");
       writer.markup("<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>");
     }
-    writer.markup("</center>");
+    writer.markup("</center><hr><p id='frames'><small style='color:gray'>*) ");
+    if (inFrame) {
+      writer.text("This site relies on HTML frames. If you don't see the index of libraries ");
+      writer.text("and types to the left of this document, load the full frame set by ");
+      writer.text("following this ");
+      writer.markup("<a href='index.html' target='_top'>link</a>.</p>\n");
+    } else {
+      writer.text("This site relies on HTML frames, but your browser does not seem ");
+      writer.text("to support frames. You may want to try a different browser to ");
+      writer.text("view this site.");
+    }
+    writer.markup("</small></p>");
   }
   
   void writeParams(HtmlWriter writer, Operation operation) throws IOException {

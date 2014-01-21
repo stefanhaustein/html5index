@@ -364,6 +364,7 @@ public class IdlParser {
       if (tokenizer.ttype == '}') {
         break;
       }
+      type.addEnumLiteral(tokenizer.sval);
       consume('"');
     } while(tokenizer.ttype == ',');
     consume('}');
