@@ -9,11 +9,11 @@ import java.util.TreeSet;
 public class Type extends Artifact {
   
   public enum Kind {
-    ARRAY_OBJECT, CLASS, GLOBAL, INTERFACE, PRIMITIVE, EXCEPTION, DICTIONARY, ALIAS, UNION, 
+    ARRAY_OBJECT, INTERFACE, GLOBAL, NO_OBJECT, PRIMITIVE, EXCEPTION, DICTIONARY, ALIAS, UNION, 
     ENUM, SEQUENCE, ARRAY, NULLABLE, PARTIAL, CALLBACK_FUNCTION, CALLBACK_INTERFACE
   }
   
-  private Kind kind = Kind.INTERFACE;
+  private Kind kind = Kind.NO_OBJECT;
   // TODO: null the objects and create on demand only?
   private TreeMap<String,Property> properties = new TreeMap<String,Property>();
   private TreeMap<String,Operation> operations = new TreeMap<String,Operation>();
@@ -39,7 +39,7 @@ public class Type extends Artifact {
   }
   
   public Type(String name) {
-    this(name, Kind.INTERFACE);
+    this(name, Kind.NO_OBJECT);
   }
 
   public void setKind(Kind kind) {
@@ -116,7 +116,7 @@ public class Type extends Artifact {
   
   public void addConstructor(Operation constructor) {
     this.constructors.add(constructor);
-    this.kind = Kind.CLASS;
+    this.kind = Kind.INTERFACE;
     constructor.owner = this;
     
   }

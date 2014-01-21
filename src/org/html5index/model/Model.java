@@ -8,9 +8,9 @@ import java.util.TreeSet;
 public class Model {
   TreeMap<String, Library> libraries = new TreeMap<String, Library>();
   Operation main;
-  Library primitives = new Library("primitives", true, null);
+  Library primitives = new Library("primitives", true);
   // Cache for sequence and array types
-  Library hidden = new Library("hidden", true, null);
+  Library hidden = new Library("hidden", true);
 
   
   public Model() {
@@ -53,6 +53,7 @@ public class Model {
 
   public void addLibrary(Library lib) {
     libraries.put(lib.getName(), lib);
+    lib.model = this;
   }
  
   

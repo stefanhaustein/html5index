@@ -34,6 +34,7 @@ public class Generator {
     writer.markup("<html><head><title>");
     writer.text(name);
     writer.markup("</title>\n");
+    writer.markup("<link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>");
     writer.markup("<link rel='stylesheet' type='text/css' href='style.css'>\n");
     writer.markup("</head>\n<body>");
     return writer;
@@ -46,18 +47,9 @@ public class Generator {
   
   void readModel() throws IOException {
     for (DocumentationProvider provider: Sources.SOURCES) {
-      Library lib = new Library(provider.getTitle(), true, provider);
-//      lib.setDocumentationProvider(provider);
-      String idl = provider.getIdl();
-      
-      
-      try {
-        new IdlParser(model, lib, idl).parse();
-      } catch(Exception e) {
-        System.out.println(idl);
-        throw new RuntimeException(e);
-      }
+      Library lib = new Library(provider.getTitle(), true);
       model.addLibrary(lib);
+      provider.readDocumentation(lib);
     }
   }
   
@@ -102,8 +94,7 @@ public class Generator {
     writeAboutContent(writer, false);
     closeWriter(writer);
   }
-  
-  
+
   public void writeLinkedType(HtmlWriter writer, Type type) throws IOException {
     if (type == null) {
       writer.text("void");
@@ -144,6 +135,9 @@ public class Generator {
   }
   
   public String kindTitle(Type.Kind kind) {
+    if (kind == Type.Kind.NO_OBJECT) {
+      return "NoObject";
+    }
     String s = kind.toString().replace("_", "-<br>");
     return s.charAt(0) + s.substring(1).toLowerCase();
   }
@@ -165,7 +159,7 @@ public class Generator {
     if (tutorials != null && tutorials.size() > 0) {
       writer.markup("<h3>Tutorials</h3><ul>");
       for (Map.Entry<String, String> entry : tutorials.entrySet()) {
-        writer.markup("<li><a href='").text(entry.getValue());
+        writer.markup("<li><a class='ext' href='").text(entry.getValue());
         if (entry.getValue().startsWith("https:")) {
           writer.markup("' target='_top'>");
         } else {
@@ -180,7 +174,7 @@ public class Generator {
     writer.markup("<h3>Specification(s)</h3>");
     writer.markup("</p><ul>");
     for (String url[]: lib.getDocumentationProvider().getUrls()) {
-      writer.markup("<li><a href='").text(url[0]).markup("'>");
+      writer.markup("<li><a class='ext' href='").text(url[0]).markup("'>");
       writer.text(url[1]);
       writer.markup("</a></li>");
     } 
@@ -222,8 +216,8 @@ public class Generator {
   }
   
   int listKind(Type.Kind kind) {
-    if (kind == Type.Kind.GLOBAL || kind == Type.Kind.CLASS || kind == Type.Kind.PARTIAL ||
-        kind == Type.Kind.PARTIAL  || kind == Type.Kind.INTERFACE || 
+    if (kind == Type.Kind.GLOBAL || kind == Type.Kind.INTERFACE || kind == Type.Kind.PARTIAL ||
+        kind == Type.Kind.PARTIAL  || kind == Type.Kind.NO_OBJECT || 
         kind == Type.Kind.CALLBACK_INTERFACE || kind == Type.Kind.ARRAY_OBJECT) {
       return 2;
     }
@@ -283,16 +277,17 @@ public class Generator {
   }
   
   public void writeHeader(HtmlWriter writer, Library lib) throws IOException {
-    writer.markup("<div style='float:right'><small><a href='Global Index.html'>Global Index</a></small></div>");
+   // writer.markup("<div style='position: absolute; left:0; top:0; width: 100%; background-color:#d9d9d9; padding:8px 16px'>");
+    writer.markup("<div style='float:right'><a href='Global Index.html'><small>Global Index</small></a></div>");
     writer.markup("<small>");
     writer.markup("<a href='index.html' target='_top'>HTML5 JS API Index</a>");
     if (lib != null) {
-      writer.markup(" &gt; <b><a href='").text(lib.getName()).markup(" - Overview.html'>");
-      writer.text(lib.getName());
-      writer.markup("</a></b>");
+      writer.markup("  &gt; <a href='").text(lib.getName()).markup(" - Overview.html'><b>");
+      writer.text(lib.getName()).markup("</b> Tutorials &amp; Specs");
+      writer.markup("</a>");
     }
-    writer.markup("</small>");
-    
+    writer.markup("</small></div>");
+  //  writer.markup("<div style='margin:16px'>&nbsp</div>");
   }
   
   
@@ -305,9 +300,9 @@ public class Generator {
 
     String url = type.getDocumentationLink();
     if (url != null) {
-      writer.markup("<a href='").text(url).markup("'>");
+      writer.markup("<a class='ext' href='").text(url).markup("'>");
       writer.text(type.getName());
-      writer.markup("</a>*");
+      writer.markup("</a>");
     } else {
       writer.text(type.getName());
     }
@@ -321,7 +316,7 @@ public class Generator {
       writeLinkedType(writer, type.getSuperType());
       writer.markup(" type.</p>");
       break;
-    case INTERFACE: 
+    case NO_OBJECT: 
       writer.markup(
           "<p>This type groups properties and / or operations together for documentation " +
           "purposes and does not have an explicit Javascript representation.</p>");
@@ -367,7 +362,7 @@ public class Generator {
 
     
     if (type.getImplementedBy().size() != 0) {
-      writer.markup("<p>").text(type.getKind() == Type.Kind.INTERFACE ? "Implemented by " : "Extended by ");
+      writer.markup("<p>").text(type.getKind() == Type.Kind.NO_OBJECT ? "Implemented by " : "Extended by ");
       boolean first = true;
       for (Type t: type.getImplementedBy()) {
         if (first) {
@@ -478,9 +473,6 @@ public class Generator {
       }
       writer.markup("</table>");
     }
-    writer.markup("<p>");
-    writer.text("Links to the specification are marked with \"*\".");
-    writer.markup("</p>");
     closeWriter(writer);
   }
 
@@ -513,19 +505,18 @@ public class Generator {
     
     writer.markup("<p>");
     writer.text("Do you think ");
-    writer.markup("<a href='http://vanilla-js.com/' target='_top'>vanilla.js</a>");
+    writer.markup("<a class='ext' href='http://vanilla-js.com/' target='_top'>vanilla.js</a>");
     writer.text(" is the best Javascript framework? ");
-    writer.markup("</p>\n<p>");
-    writer.text("Have you always missed something like JavaDoc for Javascript ").markup("&mdash; ");
-    writer.text("something that is easy to navigate, up to date and not vendor specific?");
+    writer.text("Have you always missed something similar to \"JavaDoc\" for Javascript ").markup("&mdash; ");
+    writer.text("something that is complete, easy to navigate, up to date and not vendor specific?");
     writer.markup("</p>\n<p>");
     writer.text("This HTML 5 Javascript API index is automatically generated from the ");
     writer.text("HTML 5 specification documents by scanning them for IDL fragments. ");
-    writer.text("We parse the IDL code and link it up to matching headings, ");
+    writer.text("The index generator parses the IDL code and link it up to matching headings, ");
     writer.text("creating a cross-reference that can be conveniently navigated using ");
     writer.text("the frames to the left or following the links below.");
     writer.markup("</p>\n<p>");
-    writer.text("We don't get links and summaries for everything yet ");
+    writer.text("Some links and summaries are still missing ");
     writer.text("(some specs unfortunately don't use ids that can be inferred), but ");
     writer.text("all the types and signatures should be there already.");
     writer.markup("</p>\n<p>");
@@ -616,9 +607,9 @@ public class Generator {
         writer.markup("<dl><dt>");
       }
       if (docUrl != null) {
-        writer.markup("<a href='").text(docUrl).markup("'>");
+        writer.markup("<a class='ext' href='").text(docUrl).markup("'>");
         writer.text(operation.getName());
-        writer.markup("</a>*");
+        writer.markup("</a>");
       } else {
         writer.text(operation.getName());
       }
@@ -649,9 +640,9 @@ public class Generator {
       }
       String docUrl = property.getDocumentationLink();
       if (docUrl != null) {
-        writer.markup("<a href='").text(docUrl).markup("'>");
+        writer.markup("<a class='ext' href='").text(docUrl).markup("'>");
         writer.text(property.getName());
-        writer.markup("</a>*");
+        writer.markup("</a>");
       } else {
         writer.text(property.getName());
       }
@@ -668,6 +659,7 @@ public class Generator {
 
   public void writeGlobalIndex() throws IOException {
     HtmlWriter writer = createWriter("Global Index");
+    writer.markup("<small><a href='index.html' target='_top'>HTML5 JS API Index</a></small>");
     writer.markup("<h2>Global Index</h2><p><b>");
     
     for (char c = 'A'; c <= 'Z'; c++) {

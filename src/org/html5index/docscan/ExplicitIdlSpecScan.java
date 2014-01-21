@@ -5,7 +5,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 
+import org.html5index.idl.IdlParser;
 import org.html5index.model.Artifact;
+import org.html5index.model.Library;
 import org.html5index.util.HtmlWriter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -171,16 +173,18 @@ public class ExplicitIdlSpecScan extends AbstractSpecScan {
   }
 
   @Override
-  public String getIdl() {
-    try {
-      return DomLoader.loadText(idlUrl);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+  public Iterable<String[]> getUrls() {
+    return Collections.singleton(new String[]{specUrl, specTitle});
   }
 
   @Override
-  public Iterable<String[]> getUrls() {
-    return Collections.singleton(new String[]{specUrl, specTitle});
+  public void readDocumentation(Library lib) {
+    try {
+      lib.setDocumentationProvider(this);
+      String idl =  DomLoader.loadText(idlUrl);
+      new IdlParser(lib, idl).parse();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

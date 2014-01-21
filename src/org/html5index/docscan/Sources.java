@@ -5,7 +5,8 @@ import org.html5index.model.DocumentationProvider;
 public class Sources {
   public static final DocumentationProvider[] SOURCES = {
     new ExplicitIdlSpecScan("ECMAScript", 
-        "http://www.ecma-international.org/ecma-262/5.1/", "/idl/ecmascript.idl"),
+        "http://www.ecma-international.org/ecma-262/5.1/", "/idl/ecmascript.idl")
+     .addTutorial("Webplatform: Programming Basics", "http://docs.webplatform.org/wiki/concepts/programming/programming_basics"),
     new Html5SpecScan("DOM", "http://dom.spec.whatwg.org/",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/dom.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/elements.html",
@@ -33,7 +34,7 @@ public class Sources {
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/webappapis.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/timers.html")
       .addTutorial("Treehouse: Getting started with the History API", "http://blog.teamtreehouse.com/getting-started-with-the-history-api")
-      .addTutorial("Dive into HTML5: Manipulating history for fun &amp; profit", "http://diveintohtml5.info/history.html"),
+      .addTutorial("Dive into HTML5: Manipulating history for fun & profit", "http://diveintohtml5.info/history.html"),
     new Html5SpecScan("Drag and Drop",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/dnd.html")
       .addTutorial("MDN Drag and Drop Tutorial", "https://developer.mozilla.org/en-US/docs/DragDrop/Drag_and_Drop")
@@ -56,8 +57,8 @@ public class Sources {
       .addTutorial("MDN Canvas Tutorial", "https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Canvas_tutorial"),
     new Html5SpecScan("Web Workers", 
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/workers.html")
-      .addTutorial("MDN Web Worker Tutorial", "https://developer.mozilla.org/en-US/docs/Web/Guide/Performance/Using_web_workers")
-      .addTutorial("HTML 5 Rocks Web Worker Tutorial", "http://www.html5rocks.com/en/tutorials/workers/basics/"),
+      .addTutorial("MDN: Using web workers", "https://developer.mozilla.org/en-US/docs/Web/Guide/Performance/Using_web_workers")
+      .addTutorial("HTML 5: The Basics of Web Workers", "http://www.html5rocks.com/en/tutorials/workers/basics/"),
     new Html5SpecScan("Web Storage",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/webstorage.html"),
     new Html5SpecScan("File API", "http://www.w3.org/TR/FileAPI/",

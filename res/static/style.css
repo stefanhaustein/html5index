@@ -1,16 +1,42 @@
-th {
-  background-color: #FC7;
+a:link, a:visited {
+  color:#0092bf;
+  text-decoration: none;
+}    
+a:hover, a:active {
+  color:#0092bf;
+  text-decoration: underline;
 }
 
-td, th {
-  border: 1px solid gray;
-  padding: 5px;
-  text-align: left;
-  vertical-align: top;
+a.ext:link, a.ext:visited {
+  color:#E34C26;
+  text-decoration: none;
+}    
+a.ext:hover, a.ext:active {
+  color:#E34C26;
+  text-decoration: underline;
 }
 
-.members td:first-child {
-  width: 20%;
+
+body, table, h1, h2, h3, h4, p, li, dt, dd {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #333;
+}
+
+h1, h2 {
+  font-size: 22px;
+}
+
+h3 {
+  font-size: 18px;
+}
+body {
+  margin: 16px;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 600;
 }
 
 dl {
@@ -23,6 +49,10 @@ ol.plain, ul.plain, .plain li {
     list-style: none;
 }
 
+small {
+  font-size: 13px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -30,6 +60,20 @@ table {
   margin-top: 1em;
 }
 
-body {
-  font-family: Sans-Serif;
+th {
+  background-color: #D9D9D9;
+}
+
+td, th {
+  border: 1px solid #D9D9D9;
+  padding: 5px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.members td:first-child {
+  width: 20%;
+}
+
+
 }

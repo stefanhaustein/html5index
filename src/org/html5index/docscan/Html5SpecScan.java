@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.html5index.idl.IdlParser;
 import org.html5index.model.Artifact;
+import org.html5index.model.Library;
 import org.html5index.model.Member;
 import org.html5index.model.Operation;
 import org.html5index.model.Parameter;
@@ -23,8 +25,10 @@ import org.w3c.dom.NodeList;
 public class Html5SpecScan extends AbstractSpecScan {
   final String title;
   final List<String[]> urls = new ArrayList<String[]>();
+  final List<Document> docs = new ArrayList<Document>();
   final Map<String, String[]> definitions = new HashMap<String, String[]>();
-  StringBuilder idl = new StringBuilder();
+  private NodeList currentIdlLinks;
+  private int currentIdlLinkIndex;
   
   static final String[] ID_PREFIX = {"", "dom-", "handler-", "api-"};
 
@@ -35,10 +39,6 @@ public class Html5SpecScan extends AbstractSpecScan {
     }
   }
 
-
-  public String getIdl() {
-    return idl.toString();
-  }
 
   // TODO(haustein) Just move statics on the main type and annotate them.
   private static String typeName(Type t) {
@@ -76,7 +76,33 @@ public class Html5SpecScan extends AbstractSpecScan {
     return null;
   }
   
-  private String getMemberKey(Member member) {
+  private String getKey(Artifact artifact) {
+    if (artifact instanceof Type) {
+      String key = getTypeKey((Type) artifact);
+      if (key != null) {
+        return key;
+      }
+    } 
+    
+    String name = artifact.getName();
+    int count = currentIdlLinks.getLength();
+    for (int i = 0; i < count; i++) {
+      Element a = (Element) currentIdlLinks.item(currentIdlLinkIndex);
+      if (a.getTextContent().equals(name)) {
+        currentIdlLinkIndex = i;
+        String key = a.getAttribute("href");
+        int cut = key.indexOf('#');
+        if (cut != -1) {
+          key = key.substring(cut + 1);
+          if (isValidKey(key)) {
+            return key;
+          }
+        }
+      }
+      currentIdlLinkIndex = (currentIdlLinkIndex + 1) % count;
+    }
+    return null;
+    /*
     // File API
     String key = "dfn-" + member.getName();
     if (isValidKey(key)) {
@@ -115,7 +141,11 @@ public class Html5SpecScan extends AbstractSpecScan {
 
     // Type name map
     int dashIndex = key.indexOf('-');
-    if (key.startsWith("CanvasRenderingContext2D-") ||
+    if (key.startsWith("AudioTrackList-")) {
+      key = "tracklist" + key.substring(dashIndex);
+    } else if (key.startsWith("ApplicationCache-")) {
+      key = "appcache" + key.substring(dashIndex);
+    } else if (key.startsWith("CanvasRenderingContext2D-") ||
         key.startsWith("CanvasDrawingStyles-") ||
         key.startsWith("CanvasPathMethods-")) {
       key = "context-2d" + key.substring(dashIndex);
@@ -176,20 +206,9 @@ public class Html5SpecScan extends AbstractSpecScan {
       }
     }
     
-    return null;
+    return null;*/
   }
   
-  /** Guess the matching id for the artifact based on the keys available */
-  private String getKey(Artifact artifact) {
-    if (artifact instanceof Type) {
-     return getTypeKey((Type) artifact);
-    } 
-    if (artifact instanceof Member) {
-      return getMemberKey((Member) artifact);
-    }
-    return null;
-  }
-
 
   @Override
   public String getSummary(Artifact artifact) {
@@ -226,42 +245,14 @@ public class Html5SpecScan extends AbstractSpecScan {
   void fetch(String url) {
     System.out.println(title + ": " + url);
     Document doc = DomLoader.loadDom(url);
-    
+
     String title = url;
     NodeList list = doc.getElementsByTagName("title");
     if (list.getLength() > 0) {
       title = list.item(0).getTextContent();
     }
-    
     urls.add(new String[] {url, title});
-    
-    // Read idl
-    list = doc.getElementsByTagName("pre");
-    for (int i = 0; i < list.getLength(); i++) {
-      Element pre = (Element) list.item(i);
-      String tc = pre.getTextContent().trim();
-      if (pre.getAttribute("class").equals("idl") || 
-          tc.startsWith("interface ") || tc.startsWith("partial interface")) {
-        tc = tc.replace("createFor()Blob", "createFor(Blob");
-        tc = tc.replace("attribute DOMString _camel-cased attribute", "attribute DOMString _camel_cased_attribute");
-        idl.append(tc);
-        idl.append("\n\n");
-      }
-    }
-    
-    // The file spec uses this idl code annotation
-    list = doc.getElementsByTagName("code");
-    for (int i = 0; i < list.getLength(); i++) {
-      Element code = (Element) list.item(i);
-      if (code.getAttribute("class").equals("idl-code")) {
-        String tc = code.getTextContent();
-        // Fix known issues
-        tc = tc.replace("static DOMString? createFor()Blob blob);", 
-            "static DOMString? createFor(Blob blob);");
-        idl.append(tc);
-        idl.append("\n\n");
-      }
-    }
+    docs.add(doc);
 
     // Read summaries
     list = doc.getElementsByTagName("*");
@@ -308,5 +299,50 @@ public class Html5SpecScan extends AbstractSpecScan {
       }
     }
   }
-  
+
+  void addIdl(Library lib, String idl, NodeList links) {
+    try {
+      // Hack... :-/
+      currentIdlLinks = links;
+      currentIdlLinkIndex = 0;
+      new IdlParser(lib, idl).parse();
+    } catch(Exception e) {
+      System.out.println(idl);
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void readDocumentation(Library lib) {
+    lib.setDocumentationProvider(this);
+    
+    for (Document doc: docs) {
+      // Read idl
+      NodeList list = doc.getElementsByTagName("pre");
+      for (int i = 0; i < list.getLength(); i++) {
+        Element pre = (Element) list.item(i);
+        String tc = pre.getTextContent().trim();
+        if (pre.getAttribute("class").equals("idl") || 
+            tc.startsWith("interface ") || tc.startsWith("partial interface")) {
+
+          tc = tc.replace("createFor()Blob", "createFor(Blob");
+          tc = tc.replace("attribute DOMString _camel-cased attribute", "attribute DOMString _camel_cased_attribute");
+          addIdl(lib, tc, pre.getElementsByTagName("a"));
+        }
+      }
+    
+      // The file spec uses this idl code annotation
+      list = doc.getElementsByTagName("code");
+      for (int i = 0; i < list.getLength(); i++) {
+        Element code = (Element) list.item(i);
+        if (code.getAttribute("class").equals("idl-code")) {
+          String tc = code.getTextContent();
+          // Fix known issues
+          tc = tc.replace("static DOMString? createFor()Blob blob);", 
+              "static DOMString? createFor(Blob blob);");
+          addIdl(lib, tc, code.getElementsByTagName("a"));
+        }
+      }
+    }
+  }
 }

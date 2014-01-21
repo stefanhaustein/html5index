@@ -13,11 +13,14 @@ public class Library extends Artifact {
   boolean readOnly;
   private DocumentationProvider documentationProvider;
   
-  public Library(String name, boolean readOnly, DocumentationProvider documentationProvider) {
+  public Library(String name, boolean readOnly) {
     super(0, name);
     globals.owner = this;
     this.readOnly = readOnly;
-    this.documentationProvider = documentationProvider;
+  }
+  
+  public void setDocumentationProvider(DocumentationProvider provider) {
+    documentationProvider = provider;
   }
   
   public void addType(Type type) {

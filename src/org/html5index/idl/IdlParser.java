@@ -21,8 +21,8 @@ public class IdlParser {
   Library lib;
   DocumentationProvider documentationProvider;
   
-  public IdlParser(Model model, Library lib, String idl) {
-    this.model = model;
+  public IdlParser(Library lib, String idl) {
+    this.model = lib.getModel();
     this.lib = lib;
     this.documentationProvider = lib.getDocumentationProvider();
     tokenizer = new Tokenizer(idl);
@@ -45,7 +45,7 @@ public class IdlParser {
         newType.setSuperType(type);
         return newType;
       } else {
-        kind = Type.Kind.CLASS;
+        kind = Type.Kind.INTERFACE;
       }
     }
     if (type == null) {
@@ -402,14 +402,14 @@ public class IdlParser {
 
   private void parseClassifier() {
     List<Operation> constructors = new ArrayList<Operation>();
-    Type.Kind kind = Type.Kind.CLASS;
+    Type.Kind kind = Type.Kind.INTERFACE;
     if (tokenizer.ttype == '[') {
       do {
         tokenizer.nextToken();
         String option = consumeIdentifier();
         if ("NoInterfaceObject".equals(option)) {
           if (kind != Type.Kind.GLOBAL) {
-            kind = Type.Kind.INTERFACE;
+            kind = Type.Kind.NO_OBJECT;
           }
         } else if ("Global".equals(option)) {
           kind = Type.Kind.GLOBAL;
