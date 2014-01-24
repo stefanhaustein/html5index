@@ -51,10 +51,10 @@ public class IdlParser {
     if (type == null) {
       type = new Type(name, kind);
       lib.addType(type);
-      documentationProvider.addDocumentation(type);
     } 
     type.setKind(kind);
     lib.addType(type);
+    documentationProvider.addDocumentation(type);
     return type;
   }
   

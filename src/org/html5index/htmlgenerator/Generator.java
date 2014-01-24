@@ -80,7 +80,7 @@ public class Generator {
   
   public void writeIndex() throws IOException {
     HtmlWriter writer = new HtmlWriter(new OutputStreamWriter(new FileOutputStream("gen/index.html")));
-    writer.markup("<html><head><title>HTML 5 Javascript API Index</title>\n");
+    writer.markup("<html><head><title>HTML 5 JavaScript API Index</title>\n");
     writer.markup("<link rel='icon' href='favicon.ico'>");
     writer.markup("</head>");
     writer.markup("<frameset cols='20%,80%'>\n");
@@ -306,55 +306,26 @@ public class Generator {
     } else {
       writer.text(type.getName());
     }
-
     writer.markup("</h2>\n");
     
-    switch(type.getKind()) {
-    case PARTIAL:
-      writer.markup("<p>This page describes " + type.getLibrary().getName() + 
-          " extensions to the origial ");
-      writeLinkedType(writer, type.getSuperType());
-      writer.markup(" type.</p>");
-      break;
-    case NO_OBJECT: 
-      writer.markup(
-          "<p>This type groups properties and / or operations together for documentation " +
-          "purposes and does not have an explicit Javascript representation.</p>");
-      break;
-    case DICTIONARY:
-      writer.markup(
-          "<p>This type represents a collection of object properties and does not have " +
-          "an explicit Javascript representation.</p>");
-      break;
-    case CALLBACK_INTERFACE:
-      writer.markup("<p>This type represents an interface implemented by the user for " +
-          "callback functionality.</p>");
-      break;
-    case ENUM:
-      writer.markup("<p>This type represents the following set of enum literals:</p>");
-      writer.markup("<ul>");
-      for (String s: type.getEnumLiterals()) {
-        writer.markup("<li>");
-        writer.text(s);
-        writer.markup("</li>");
-      }
-      writer.markup("</ul>");
-      break;
-    }
-    
+    boolean popen = false;
     if (type.getSuperType() != null && type.getKind() != Type.Kind.PARTIAL) {
       writer.markup("<p>");
+      popen = true;
       if (type.getKind() == Type.Kind.ALIAS) {
         writer.text("Alias for ");
       } else {
         writer.text("Extends ");
       }
       writeLinkedType(writer, type.getSuperType());
-      writer.markup(".</p>");
-    }
-
+      writer.text(". ");
+    } 
     if (type.getTypes().size() != 0) {
-      writer.markup("<p>").text("Implements ");
+      if (!popen) {
+        writer.markup("<p>");
+        popen = true;
+      }
+      writer.text("Implements ");
       boolean first = true;
       for (Type t: type.getTypes()) {
         if (first) {
@@ -364,9 +335,11 @@ public class Generator {
         }
         writeLinkedType(writer, t);
       }
-      writer.markup(".</p>");
+      writer.text(".");
     }
-
+    if (popen) {
+      writer.markup("</p>");
+    }
     
     if (type.getImplementedBy().size() != 0) {
       writer.markup("<p>").text(type.getKind() == Type.Kind.NO_OBJECT ? "Implemented by " : "Extended by ");
@@ -385,6 +358,40 @@ public class Generator {
       writer.markup("<p>").text(type.getDocumentationSummary()).markup("</p>");
     }
 
+    switch(type.getKind()) {
+    case PARTIAL:
+      writer.markup("<p>This page describes " + type.getLibrary().getName() + 
+          " extensions to the origial ");
+      writeLinkedType(writer, type.getSuperType());
+      writer.markup(" type.</p>");
+      break;
+    case NO_OBJECT: 
+      writer.markup(
+          "<p>This type groups properties and / or operations together for documentation " +
+          "purposes and does not have an explicit JavaScript representation.</p>");
+      break;
+    case DICTIONARY:
+      writer.markup(
+          "<p>This type represents a collection of object properties and does not have " +
+          "an explicit JavaScript representation.</p>");
+      break;
+    case CALLBACK_INTERFACE:
+      writer.markup("<p>This type represents an interface implemented by the user for " +
+          "callback functionality.</p>");
+      break;
+    case ENUM:
+      writer.markup("<p>This type represents the following set of enum literals:</p>");
+      writer.markup("<ul>");
+      for (String s: type.getEnumLiterals()) {
+        writer.markup("<li>");
+        writer.text(s);
+        writer.markup("</li>");
+      }
+      writer.markup("</ul>");
+      break;
+    }
+
+    
     Collection<Property> properties = type.getOwnAndInterfaceProperties();
     if (properties.size() != 0) {
       ArrayList<Property> constants = new ArrayList<Property>();
@@ -504,20 +511,25 @@ public class Generator {
   }
   
   void writeAboutContent(HtmlWriter writer, boolean inFrame) throws IOException {
-    writer.markup("<div style='float:right;padding:0 0 10px 10px;text-align:right'>");
-    writer.markup("<small><a href='Global Index.html'>Global Index</a></small><br><br>");
+    writer.markup("<div style='float:right;padding:0 0 10px 10px;text-align:right'><small>");
+    writer.markup("<a href='Global Index.html'>Global Index</a>");
+    if (inFrame) {
+      writer.markup("&nbsp;&nbsp;&nbsp;<span style='position:relative; top:2px'>");
+      writer.markup("<div style='display:inline-block' class='g-plusone' data-size='small' data-annotation='none'></span></div>");
+    }
+    writer.markup("</small><br><br>");
     writer.markup("<img src='http://www.w3.org/html/logo/downloads/HTML5_Logo_128.png' title='HTML 5 Logo by W3C'>");
     writer.markup("</div>");
-    writer.markup("<h2>The HTML 5 Javascript API Index</h2>\n");
+    writer.markup("<h2>The HTML 5 JavaScript API Index</h2>\n");
     
     writer.markup("<p>");
     writer.text("Do you think ");
     writer.markup("<a class='ext' href='http://vanilla-js.com/' target='_top'>vanilla.js</a>");
-    writer.text(" is the best Javascript framework? ");
-    writer.text("Have you always missed something similar to \"JavaDoc\" for Javascript ").markup("&mdash; ");
+    writer.text(" is the best JavaScript framework? ");
+    writer.text("Have you always missed something similar to \"JavaDoc\" for JavaScript ").markup("&mdash; ");
     writer.text("something that is complete, easy to navigate, up to date and not vendor specific?");
     writer.markup("</p>\n<p>");
-    writer.text("This HTML 5 Javascript API index is automatically generated from the ");
+    writer.text("This HTML 5 JavaScript API index is automatically generated from the ");
     writer.text("HTML 5 specification documents by scanning them for IDL fragments. ");
     writer.text("The index generator parses the IDL code and link it up to matching headings, ");
     writer.text("creating a cross-reference that can be conveniently navigated using ");
@@ -525,10 +537,11 @@ public class Generator {
     writer.markup("</p>\n<p>");
     writer.text("Some links and summaries are still missing ");
     writer.text("(some specs unfortunately don't use ids that can be inferred), but ");
-    writer.text("all the types and signatures should be there already.");
+    writer.text("all the types and signatures should be there already ");
+    writer.markup("(<a class='ext' href='https://github.com/stefanhaustein/html5index/issues' target='_top'>issue tracker</a>).");
     writer.markup("</p>\n<p>");
     writer.text("Note that this index is most useful for looking up method names and ");
-    	writer.text("signatures if you are already familiar with HTML 5 and Javascript. ");
+    	writer.text("signatures if you are already familiar with HTML 5 and JavaScript. ");
     	writer.text("However, for getting started quickly, we also include links to ");
     	writer.text("corresponding tutorials on the library overview pages.");
     writer.markup("</p>\n<p>");
@@ -551,11 +564,19 @@ public class Generator {
     if (inFrame) {
       writer.markup("<script async src='//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'></script>");
       writer.markup("<!-- about -->");
-      writer.markup("<ins class='adsbygoogle'");
-      writer.markup("     style='display:inline-block;width:728px;height:90px'");
-      writer.markup("     data-ad-client='ca-pub-2730368453635186'");
-      writer.markup("     data-ad-slot='5067641553'></ins>");
-      writer.markup("<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>");
+      writer.markup("<ins class='adsbygoogle'\n");
+      writer.markup("     style='display:inline-block;width:728px;height:90px'\n");
+      writer.markup("     data-ad-client='ca-pub-2730368453635186'\n");
+      writer.markup("     data-ad-slot='5067641553'></ins>\n");
+      writer.markup("<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>\n");
+      
+      writer.markup("<script type='text/javascript'>\n");
+      writer.markup("(function() {\n");
+      writer.markup("  var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;\n");
+      writer.markup("  po.src = 'https://apis.google.com/js/platform.js';\n");
+      writer.markup("  var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);\n");
+      writer.markup("})()\n");
+      writer.markup("</script>\n");
     }
     writer.markup("</center><hr><p id='frames'><small style='color:gray'>*) ");
     if (inFrame) {

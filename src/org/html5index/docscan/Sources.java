@@ -54,6 +54,7 @@ public class Sources {
       .addTutorial("HTML 5 Rocks: A Beginner's Guide to Using the Application Cache", "http://www.html5rocks.com/en/tutorials/appcache/beginner/"),
     new Html5SpecScan("Canvas", 
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-canvas-element.html")
+      .addTypeIdMap("CanvasRenderingContext2D", "2dcontext")
       .addTutorial("MDN Canvas Tutorial", "https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Canvas_tutorial"),
     new Html5SpecScan("Web Workers", 
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/workers.html")

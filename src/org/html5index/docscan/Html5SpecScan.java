@@ -8,9 +8,6 @@ import java.util.Map;
 import org.html5index.idl.IdlParser;
 import org.html5index.model.Artifact;
 import org.html5index.model.Library;
-import org.html5index.model.Member;
-import org.html5index.model.Operation;
-import org.html5index.model.Parameter;
 import org.html5index.model.Type;
 import org.html5index.util.HtmlWriter;
 import org.w3c.dom.Document;
@@ -29,47 +26,76 @@ public class Html5SpecScan extends AbstractSpecScan {
   final Map<String, String[]> definitions = new HashMap<String, String[]>();
   private NodeList currentIdlLinks;
   private int currentIdlLinkIndex;
-  
-  static final String[] ID_PREFIX = {"", "dom-", "handler-", "api-"};
+  final HashMap<String,String> typeIdMap = new HashMap<String, String>();
+  boolean fetched = false;
 
   Html5SpecScan(String title, String... urls) {
     this.title = title;
+    
     for (String url: urls) {
-      fetch(url);
+      this.urls.add(new String[]{url, url});
     }
   }
 
+  public Html5SpecScan addTypeIdMap(String... s) {
+    for (int i = 0; i < s.length; i += 2) {
+      typeIdMap.put(s[i], s[i+1]);
+    }
+    return this;
+  }
 
-  // TODO(haustein) Just move statics on the main type and annotate them.
-  private static String typeName(Type t) {
-    if (t == null) {
-      return "void";
+  private String typeToId(String name) {
+    String id = typeIdMap.get(name);
+    if (id != null) {
+      return id;
     }
-    String s = t.getName();
-    if (s.startsWith("Meta<")) {
-      s = s.substring(5).replace(">", "");
+    int cut = name.indexOf("Element");
+    if (name.startsWith("HTML") && cut != -1 && cut != 4) {
+      id = name.substring(4, cut).toLowerCase();
+      if (id.equals("tablerow")) {
+        id = "tr";
+      } else if (id.equals("tablecell") || id.equals("tabledatacell")) {
+        id = "td";
+      } else if (id.equals("tableheadercell")) {
+        id = "th";
+      }
     }
-    s = s.replace("?", "").replace("[]", "");
-    return s;
+    return id;
   }
   
   private boolean isValidKey(String key) {
     return definitions.containsKey(key);
   }
   
-  private final String[] TYPE_ID_PREFIX = {"the-", "widl-", "idl-def-", ""};
-  private final String[] TYPE_ID_SUFFIX = {"-interface", "-section", ""};
+  private final String[] TYPE_ID_PREFIX = {"the-", "widl-", "idl-def-", "interface-", ""};
+  private final String[] TYPE_ID_SUFFIX = {"-interface", "-interfaces", "-section", "-element", ""};
 
   private String getTypeKey(Type type) {
+    String name = type.getName();
+    if (name.toLowerCase().indexOf("canvas") != -1) {
+      // doofl;
+      System.out.println("ddd");
+    }
+    String id = typeToId(name);
     for (String prefix: TYPE_ID_PREFIX) {
       for (String suffix: TYPE_ID_SUFFIX) {
-        String key = prefix + type.getName() + suffix;
+        String key = prefix + name + suffix;
         if (isValidKey(key)) {
           return key;
         }
         key = key.toLowerCase();
         if (isValidKey(key)) {
           return key;
+        }
+        if (id != null) {
+          key = prefix + id + suffix;
+          if (isValidKey(key)) {
+            return key;
+          }
+          key = key.toLowerCase();
+          if (isValidKey(key)) {
+            return key;
+          }
         }
       }
     }
@@ -102,111 +128,6 @@ public class Html5SpecScan extends AbstractSpecScan {
       currentIdlLinkIndex = (currentIdlLinkIndex + 1) % count;
     }
     return null;
-    /*
-    // File API
-    String key = "dfn-" + member.getName();
-    if (isValidKey(key)) {
-      return key;
-    }
-    // File Writer, File System
-    key = key.toLowerCase();
-    if (isValidKey(key)) {
-      return key;
-    }
-    StringBuilder sb = new StringBuilder("widl-");
-    sb.append(typeName(member.getOwner()));
-    sb.append('-');
-    sb.append(member.getName());
-    if (member instanceof Operation) {
-      sb.append('-');
-      sb.append(typeName(member.getType()).replace(' ', '-'));
-      Operation op = (Operation) member;
-      for (Parameter p: op.getParameters()) {
-        sb.append('-');
-        sb.append(typeName(p.getType()));
-        sb.append('-');
-        sb.append(p.getName());
-      }
-    }
-    key = sb.toString();
-    if (isValidKey(key)) {
-      return key;
-    }
-
-    // WHATWG
-    key = member.getQualifiedName();
-    int cut = key.indexOf("/");
-    key = key.substring(cut + 1).replace(".", "-");
-    key = key.replace("Meta<", "").replace(">", "");
-
-    // Type name map
-    int dashIndex = key.indexOf('-');
-    if (key.startsWith("AudioTrackList-")) {
-      key = "tracklist" + key.substring(dashIndex);
-    } else if (key.startsWith("ApplicationCache-")) {
-      key = "appcache" + key.substring(dashIndex);
-    } else if (key.startsWith("CanvasRenderingContext2D-") ||
-        key.startsWith("CanvasDrawingStyles-") ||
-        key.startsWith("CanvasPathMethods-")) {
-      key = "context-2d" + key.substring(dashIndex);
-    } else if (key.startsWith("HTMLCanvasElement-")) {
-      key = "canvas" + key.substring(dashIndex);
-    } else if (key.startsWith("GlobalEventHandlers-")) {
-      key = "handler" + key.substring(dashIndex);
-    } else if (key.startsWith("WindowEventHandlers-")) {
-      key = "window" + key.substring(dashIndex);
-    }
-
-    for (int i = 0; i < 2; i++) {
-      for (String prefix: ID_PREFIX) {
-        if (isValidKey(prefix + key)) {
-          return prefix + key;
-        }
-      }
-      key = key.toLowerCase();
-    }
-
-    // Note: Key is lowercase from here on (set in the loop above).
-    cut = key.indexOf('-');
-    if (cut != -1 && isValidKey("dom" + key.substring(cut))) {
-      return "dom" + key.substring(cut);
-    }
-    cut = key.indexOf("element-");
-    if (key.startsWith("html") && cut != -1 && cut != 4) {
-      String elementName = key.substring(4, cut);
-      if (elementName.equals("tablerow")) {
-        elementName = "tr";
-      } else if (elementName.equals("tablecell") || elementName.equals("tabledatacell")) {
-        elementName = "td";
-      } else if (elementName.equals("tableheadercell")) {
-        elementName = "th";
-      }
-      
-      if (elementName.startsWith("table") && elementName.length() > 5) {
-        elementName = elementName.substring(5);
-      }
-      
-      String memberName = key.substring(cut + 8);
-      String k = "dom-" + elementName + "-" + memberName; 
-      if (isValidKey(k)) {
-        return k;
-      }
-      // Example: dom-textarea/input-selectiondirection
-      k = "dom-" + elementName + "/input-" + memberName;
-      if (isValidKey(k)) {
-        return k;
-      }
-      k = "dom-fe-" + memberName;
-      if (isValidKey(k)) {
-        return k;
-      }
-      k = "dom-fae-" + memberName;
-      if (isValidKey(k)) {
-        return k;
-      }
-    }
-    
-    return null;*/
   }
   
 
@@ -242,16 +163,23 @@ public class Html5SpecScan extends AbstractSpecScan {
     return urls;
   }
   
-  void fetch(String url) {
+  void fetchAll() {
+    if (!fetched) {
+      fetched = true;
+      for (String[] urlAndTitle : urls) {
+        urlAndTitle[1] = fetch(urlAndTitle[0]);
+      }
+    }
+  }
+
+  String fetch(String url) {
     System.out.println(title + ": " + url);
     Document doc = DomLoader.loadDom(url);
-
     String title = url;
     NodeList list = doc.getElementsByTagName("title");
     if (list.getLength() > 0) {
       title = list.item(0).getTextContent();
     }
-    urls.add(new String[] {url, title});
     docs.add(doc);
 
     // Read summaries
@@ -260,7 +188,7 @@ public class Html5SpecScan extends AbstractSpecScan {
       Element element = (Element) list.item(i);
       String id = element.getAttribute("id");
       if (id != null) {
-        if (element.getNodeName().equals("dfn")) {
+        while (element.getNodeName().equals("dfn") || element.getNodeName().equals("code")) {
           element = (Element) element.getParentNode();
         }
         String name = element.getNodeName();
@@ -285,19 +213,25 @@ public class Html5SpecScan extends AbstractSpecScan {
             text = "";
           }
         } else if (name.startsWith("h") && name.length() == 2) {
-          Node next = element.getNextSibling();
-          while (next != null && !(next instanceof Element)) {
-            next = next.getNextSibling();
-          }
-          if (next != null && next.getNodeName().equals("p")) {
-            text = next.getTextContent();
-          } else {
+          int j = 0;
+          do {
+            element = getNextElementSibling(element);
+            if (element == null || element.getNodeName().startsWith("h")) {
+              text = "";
+              break;
+            } else if (element.getNodeName().equals("p")) {
+              text = element.getTextContent();
+              break;
+            } 
+          } while(++j < 3);
+          if (j == 3) {
             text = "";
           }
         }
         definitions.put(id, new String[]{url, HtmlWriter.summary(text)});
       }
     }
+    return title;
   }
 
   void addIdl(Library lib, String idl, NodeList links) {
@@ -314,6 +248,7 @@ public class Html5SpecScan extends AbstractSpecScan {
 
   @Override
   public void readDocumentation(Library lib) {
+    fetchAll();
     lib.setDocumentationProvider(this);
     
     for (Document doc: docs) {
