@@ -66,11 +66,14 @@ public class IdlParser {
       tokenizer.nextToken();
       Type superType = parseType();
       type.setSuperType(superType);
-    } else if (tokenizer.sval.equals("implements")) {
-      tokenizer.nextToken();
-      Type base = parseType();
-      type.addType(base);
-      base.addImplemenetedBy(type);
+    } 
+    if (tokenizer.sval.equals("implements") || tokenizer.sval.equals(",")) {
+      do {
+        tokenizer.nextToken();
+        Type base = parseType();
+        type.addType(base);
+        base.addImplemenetedBy(type);
+      } while (tokenizer.sval.equals(","));
     }
     
     if (tokenizer.ttype == ';') {

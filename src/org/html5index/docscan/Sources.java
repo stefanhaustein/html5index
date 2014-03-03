@@ -78,6 +78,11 @@ public class Sources {
       .addTutorial("HTML 5 Rocks: Shadow DOM 101", "http://www.html5rocks.com/en/tutorials/webcomponents/shadowdom/"),
     new Html5SpecScan("CSS Object Model", Category.STYLING, "http://www.w3.org/TR/cssom/")
       .addTutorial("Divya Manian: CSS Object Model", "http://nimbupani.com/css-object-model.html"),
+    new Html5SpecScan("Indexed DB", Category.OFFLINE_STORAGE, "http://www.w3.org/TR/IndexedDB/")
+      .addTutorial("MDN: Indexed DB Basic Concepts", "https://developer.mozilla.org/en-US/docs/IndexedDB/Basic_Concepts_Behind_IndexedDB")
+      .addTutorial("MDN: Using  IndexedDB", "https://developer.mozilla.org/en-US/docs/IndexedDB/Using_IndexedDB")
+      .addTutorial("HTML 5 Rocks: A simple TODO list using HTML5 IndexedDB", "http://www.html5rocks.com/en/tutorials/indexeddb/todo/"),
+  //  new Html5SpecScan("SVG", Category.GRAPHICS, "http://www.w3.org/TR/SVG/single-page.html"),
     new ExplicitIdlSpecScan("Typed Arrays", Category.PERFORMANCE,
         "http://www.khronos.org/registry/typedarray/specs/latest/", 
         "https://www.khronos.org/registry/typedarray/specs/latest/typedarray.idl")
