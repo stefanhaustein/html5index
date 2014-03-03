@@ -19,7 +19,6 @@ import org.w3c.dom.NodeList;
  * the TOC (and the corresponding ids) at runtime.
  */
 public class ExplicitIdlSpecScan extends AbstractSpecScan {
-  String title;
   String specUrl;
   String idlUrl;
   String specTitle;
@@ -29,9 +28,9 @@ public class ExplicitIdlSpecScan extends AbstractSpecScan {
   HashMap<String,String> summaries = new HashMap<String, String>();
   boolean ecma;
   
-  public ExplicitIdlSpecScan(String title, String docUrl, String idlUrl) {
+  public ExplicitIdlSpecScan(String title, Category category, String docUrl, String idlUrl) {
+    super(title, category);
     this.ecma = title.startsWith("ECMA");
-    this.title = title;
     this.specUrl = docUrl;
     this.idlUrl = idlUrl;
     System.out.print("Fetching " + docUrl + "...");

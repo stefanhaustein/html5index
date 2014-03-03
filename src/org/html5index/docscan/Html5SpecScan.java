@@ -20,7 +20,6 @@ import org.w3c.dom.NodeList;
  * Supports multiple sources; IDL is embedded.
  */
 public class Html5SpecScan extends AbstractSpecScan {
-  final String title;
   final List<String[]> urls = new ArrayList<String[]>();
   final List<Document> docs = new ArrayList<Document>();
   final Map<String, String[]> definitions = new HashMap<String, String[]>();
@@ -29,8 +28,8 @@ public class Html5SpecScan extends AbstractSpecScan {
   final HashMap<String,String> typeIdMap = new HashMap<String, String>();
   boolean fetched = false;
 
-  Html5SpecScan(String title, String... urls) {
-    this.title = title;
+  Html5SpecScan(String title, Category category, String... urls) {
+    super(title, category);
     
     for (String url: urls) {
       this.urls.add(new String[]{url, url});

@@ -16,6 +16,7 @@ import org.html5index.docscan.Sources;
 import org.html5index.idl.IdlParser;
 import org.html5index.model.Artifact;
 import org.html5index.model.DocumentationProvider;
+import org.html5index.model.DocumentationProvider.Category;
 import org.html5index.model.Library;
 import org.html5index.model.Member;
 import org.html5index.model.Model;
@@ -195,7 +196,7 @@ public class Generator {
     
     if (kindMap.size() > 0) {
       writer.markup("<h3>Declared Types</h3>");
-      writer.markup("<table><tr>");
+      writer.markup("<table class='types'><tr>");
       
       for (Type.Kind kind: kindMap.keySet()) {
         writer.markup("<th>" + kindTitle(kind) + "</th>");
@@ -513,16 +514,50 @@ public class Generator {
   void writeAboutContent(HtmlWriter writer, boolean inFrame) throws IOException {
     writer.markup("<div style='float:right;padding:0 0 10px 10px;text-align:right'><small>");
     writer.markup("<a href='Global Index.html'>Global Index</a>");
-    if (inFrame) {
-      writer.markup("&nbsp;&nbsp;&nbsp;<span style='position:relative; top:2px'>");
-      writer.markup("<div style='display:inline-block' class='g-plusone' data-size='small' data-annotation='none'></span></div>");
-    }
-    writer.markup("</small><br><br>");
-    writer.markup("<img src='http://www.w3.org/html/logo/downloads/HTML5_Logo_128.png' title='HTML 5 Logo by W3C'>");
+   // if (inFrame) {
+   //   writer.markup("&nbsp;&nbsp;&nbsp;<span style='position:relative; top:2px'>");
+   //   writer.markup("<div style='display:inline-block' class='g-plusone' data-size='small' data-annotation='none'></span></div>");
+  //  }
+    writer.markup("</small>"); //<br><br>");
+//    writer.markup("<img src='http://www.w3.org/html/logo/downloads/HTML5_Logo_128.png' title='HTML 5 Logo by W3C'>");
     writer.markup("</div>");
     writer.markup("<h2>The HTML 5 JavaScript API Index</h2>\n");
     
     writer.markup("<p>");
+    writer.markup("<table class='rays'>");
+    Category[] cats = Category.values();
+    for (int i = 0; i < cats.length; i += 2) {
+      writer.markup("<tr>");
+      Category cat = cats[i];
+      for (int col = 0; col < 5; col++) {
+        if (col == 2) {
+          cat = cats[i + 1];
+          writer.markup("<td title='HTML 5 Logo by W3C'><div style='width:200px'></div>");
+        } else if (col == 0 || col == 4) {
+          writer.markup(col < 2 ? "<td style='text-align:right;width:50%'>" : "<td style='width:50%'>");
+          boolean first = true;
+          for (Library lib: model.getLibraries()) {
+            if (lib.getDocumentationProvider().getCategory() == cat) {
+              if  (first) {
+                first = false;
+              } else {
+                writer.text(", ");
+              }
+              writer.markup("<a href='").text(lib.getName() + " - Overview.html").markup("'>");
+              writer.text(lib.getName());
+              writer.markup("</a>");
+            }
+          }
+        } else if (col == 1 || col == 3) {
+          writer.markup("<td>");
+          writer.markup("<img src='img/").text(cat.toString()).markup(".png' title='").text(cat.toString()).markup("'>");
+        }
+        writer.markup("</td>");
+      }         
+      writer.markup("</tr>");
+    }
+    writer.markup("</table>");
+    writer.markup("</p><p>");
     writer.text("Do you think ");
     writer.markup("<a class='ext' href='http://vanilla-js.com/' target='_top'>vanilla.js</a>");
     writer.text(" is the best JavaScript framework? ");
@@ -533,32 +568,20 @@ public class Generator {
     writer.text("HTML 5 specification documents by scanning them for IDL fragments. ");
     writer.text("The index generator parses the IDL code and link it up to matching headings, ");
     writer.text("creating a cross-reference that can be conveniently navigated using ");
-    writer.text("the frames to the left* or following the links below.");
+    writer.text("the frames to the left* or following the links above.");
     writer.markup("</p>\n<p>");
+
     writer.text("Some links and summaries are still missing ");
     writer.text("(some specs unfortunately don't use ids that can be inferred), but ");
     writer.text("all the types and signatures should be there already ");
     writer.markup("(<a class='ext' href='https://github.com/stefanhaustein/html5index/issues' target='_top'>issue tracker</a>).");
     writer.markup("</p>\n<p>");
     writer.text("Note that this index is most useful for looking up method names and ");
-    	writer.text("signatures if you are already familiar with HTML 5 and JavaScript. ");
-    	writer.text("However, for getting started quickly, we also include links to ");
-    	writer.text("corresponding tutorials on the library overview pages.");
+    writer.text("signatures if you are already familiar with HTML 5 and JavaScript. ");
+    writer.text("However, for getting started quickly, we also include links to ");
+    writer.text("corresponding tutorials on the library overview pages.");
     writer.markup("</p>\n<p>");
 
-    writer.markup("<h3>Covered Libraries</h3>\n<p>");
-    
-    boolean first = true;
-    for (Library lib: model.getLibraries()) {
-      if (first) {
-        first = false;
-      } else {
-        writer.text(", ");
-      }
-      writer.markup("<a href='").text(lib.getName() + " - Overview.html").markup("'>");
-      writer.text(lib.getName());
-      writer.markup("</a>");
-    }
     writer.markup("</p><hr><center>\n");
     
     if (inFrame) {

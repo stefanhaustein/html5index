@@ -10,9 +10,16 @@ import org.w3c.dom.Node;
 
 public abstract class AbstractSpecScan implements DocumentationProvider {
 
-  Map<String, String> tutorials = new TreeMap<String,String>();
+  private Map<String, String> tutorials = new TreeMap<String,String>();
+  private Category category;
+  protected String title;
   
-  AbstractSpecScan addTutorial(String title, String url) {
+  protected AbstractSpecScan(String title, Category category) {
+    this.title = title;
+    this.category = category;
+  }
+  
+  public AbstractSpecScan addTutorial(String title, String url) {
     tutorials.put(title, url);
     return this;
   }
@@ -52,4 +59,11 @@ public abstract class AbstractSpecScan implements DocumentationProvider {
     return getNextElementSibling(n);
   }
   
+  public String getTitle() {
+    return title;
+  }
+  
+  public Category getCategory() {
+    return category;
+  }
 }
