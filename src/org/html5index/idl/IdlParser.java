@@ -149,6 +149,14 @@ public class IdlParser {
     
     String name = tokenizer.sval;
     consume(Tokenizer.TT_WORD);
+    
+    if (tokenizer.sval.equals("setraises")) {  // Used in SVG spec
+      tokenizer.nextToken();
+      consume('(');
+      consumeIdentifier(); // exception(?);
+      consume(')');
+    }
+    
     consume(';');
     return new Property(modifiers, propertyType, name, null);
   }

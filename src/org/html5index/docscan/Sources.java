@@ -82,7 +82,7 @@ public class Sources {
       .addTutorial("MDN: Indexed DB Basic Concepts", "https://developer.mozilla.org/en-US/docs/IndexedDB/Basic_Concepts_Behind_IndexedDB")
       .addTutorial("MDN: Using  IndexedDB", "https://developer.mozilla.org/en-US/docs/IndexedDB/Using_IndexedDB")
       .addTutorial("HTML 5 Rocks: A simple TODO list using HTML5 IndexedDB", "http://www.html5rocks.com/en/tutorials/indexeddb/todo/"),
-  //  new Html5SpecScan("SVG", Category.GRAPHICS, "http://www.w3.org/TR/SVG/single-page.html"),
+    new Html5SpecScan("SVG", Category.GRAPHICS, "http://www.w3.org/TR/SVG/single-page.html"),
     new ExplicitIdlSpecScan("Typed Arrays", Category.PERFORMANCE,
         "http://www.khronos.org/registry/typedarray/specs/latest/", 
         "https://www.khronos.org/registry/typedarray/specs/latest/typedarray.idl")
