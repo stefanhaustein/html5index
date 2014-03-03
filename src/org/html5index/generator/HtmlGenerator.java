@@ -14,7 +14,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.html5index.docscan.Sources;
-import org.html5index.idl.IdlParser;
 import org.html5index.model.Artifact;
 import org.html5index.model.DocumentationProvider;
 import org.html5index.model.DocumentationProvider.Category;
