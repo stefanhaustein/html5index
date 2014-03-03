@@ -1,6 +1,7 @@
 package org.html5index.generator;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -80,6 +81,7 @@ public class HtmlGenerator {
   }
   
   public void writeIndex() throws IOException {
+    new File("gen").mkdir();
     HtmlWriter writer = new HtmlWriter(new OutputStreamWriter(new FileOutputStream("gen/index.html")));
     writer.markup("<html><head><title>HTML 5 JavaScript API Index</title>\n");
     writer.markup("<link rel='icon' href='favicon.ico'>");

@@ -31,7 +31,7 @@ public class DomLoader {
       InputStream inputStream = DomLoader.class.getResourceAsStream(url);
       return new BufferedReader(new InputStreamReader(inputStream, "utf-8"));
     } 
-    String cacheName = url.replace(":", "").replace("/", "");
+    String cacheName = url.replace(":", "_").replace("/", "_2");
     File cacheFile = new File("cache", cacheName);
     if (cacheFile.exists()) {
       return new BufferedReader(new InputStreamReader(new FileInputStream(cacheFile), "utf-8"));
@@ -53,6 +53,7 @@ public class DomLoader {
     String text = loadText(reader);
     reader.close();
     
+    new File("cache").mkdir();
     Writer writer = new OutputStreamWriter(new FileOutputStream(cacheFile), "utf-8");
     writer.write(text);
     writer.close();

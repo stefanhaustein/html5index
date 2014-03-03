@@ -16,7 +16,7 @@ public class Sources {
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/grouping-content.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/text-level-semantics.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/edits.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/embedded-content-1.html",
+//        "http://www.whatwg.org/specs/web-apps/current-work/multipage/embedded-content-1.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-iframe-element.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-map-element.html",
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/links.html",

@@ -414,14 +414,22 @@ public class IdlParser {
           }
         } else if ("Global".equals(option)) {
           kind = Type.Kind.GLOBAL;
+          if (tokenizer.ttype == '=') {
+            consume('=');
+            consumeIdentifier();
+          }
         } else if ("Callback".equals(option)) {
           consume('=');
           consumeIdentifier();
-        } else if ("ArrayClass".equals(option) || 
+        } else if ("ArrayClass".equals(option) ||
             "TreatNonCallableAsNull".equals(option) ||
             "OverrideBuiltins".equals(option) ||
             "Unforgeable".equals(option) ||
-            "Supplemental".equals(option)) {
+            "Supplemental".equals(option) || 
+            "PrimaryGlobal".equals(option) ||
+            "SharedWorker".equals(option) ||
+            "DedicatedWorker".equals(option) ||
+            "Worker".equals(option)) { // Is Worker supposed to be the 2nd argument of Exposed?
         } else if ("Constructor".equals(option) || "NamedConstructor".equals(option)) {
           String name = "";
           if (option.equals("NamedConstructor")) {
@@ -433,6 +441,9 @@ public class IdlParser {
             parseParameterList(c);
           }
           constructors.add(c);
+        } else if ("Exposed".equals(option)) {
+          consume('=');
+          consumeIdentifier();
         } else {
           throw new RuntimeException("Unrecognized option: " + option);
         }
