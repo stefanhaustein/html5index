@@ -106,6 +106,10 @@ public class IdlParser {
         Property c = parseConst();
         type.addProperty(c);
         documentationProvider.addDocumentation(c);
+      } else if ("serializer".equals(sval)) {
+        while (tokenizer.nextToken() != '}');  // TODO: Support serializers
+        consume('}');
+        consume(';');
       } else {
         Operation operation = parseOperation(modifiers);
         Operation old = type.getOperation(operation.getName());
@@ -150,7 +154,8 @@ public class IdlParser {
     String name = tokenizer.sval;
     consume(Tokenizer.TT_WORD);
     
-    if (tokenizer.sval.equals("setraises")) {  // Used in SVG spec
+    if (tokenizer.sval.equals("setraises") ||  // Used in SVG spec
+        tokenizer.sval.equals("raises")) { 
       tokenizer.nextToken();
       consume('(');
       consumeIdentifier(); // exception(?);
@@ -232,7 +237,11 @@ public class IdlParser {
         name = "unrestricted " + consumeIdentifier();
       } else if (tokenizer.sval.equals("unsigned")) {
         consumeIdentifier();
-        name = "unsigned " + consumeIdentifier();
+        if (tokenizer.ttype == '?') { // This pain occurs in webrtc...
+          name = "unsigned int"; // is this right?
+        } else {
+          name = "unsigned " + consumeIdentifier();
+        }
       } else {
         name = consumeIdentifier();
       }

@@ -12,7 +12,6 @@ import org.html5index.model.Type;
 import org.html5index.util.HtmlWriter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 
@@ -265,16 +264,18 @@ public class Html5SpecScan extends AbstractSpecScan {
         }
       }
     
-      // The file spec uses this idl code annotation
-      list = doc.getElementsByTagName("code");
-      for (int i = 0; i < list.getLength(); i++) {
-        Element code = (Element) list.item(i);
-        if (code.getAttribute("class").equals("idl-code")) {
-          String tc = code.getTextContent();
-          // Fix known issues
-          tc = tc.replace("static DOMString? createFor()Blob blob);", 
-              "static DOMString? createFor(Blob blob);");
-          addIdl(lib, tc, code.getElementsByTagName("a"));
+      if (title.indexOf("File API") != -1) {
+        // The file spec uses this idl code annotation. We permit both for the case that this gets fixed...
+        list = doc.getElementsByTagName("code");
+        for (int i = 0; i < list.getLength(); i++) {
+          Element code = (Element) list.item(i);
+          if (code.getAttribute("class").equals("idl-code")) {
+            String tc = code.getTextContent();
+            // Fix known issues
+            tc = tc.replace("static DOMString? createFor()Blob blob);", 
+                "static DOMString? createFor(Blob blob);");
+            addIdl(lib, tc, code.getElementsByTagName("a"));
+          }
         }
       }
     }

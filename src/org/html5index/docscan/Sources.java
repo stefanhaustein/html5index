@@ -46,6 +46,8 @@ public class Sources {
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/web-messaging.html")
       .addTutorial("Treehouse Websocket Introduction", "http://blog.teamtreehouse.com/an-introduction-to-websockets")
       .addTutorial("HTML 5 Rocks Websocket Tutorial", "http://www.html5rocks.com/en/tutorials/websockets/basics/"),
+    new Html5SpecScan("Animation Timing", Category.MULTIMEDIA, "http://www.w3.org/TR/animation-timing/")
+      .addTutorial("MDN: Window.requestAnimationFrame()", "https://developer.mozilla.org/en-US/docs/Web/API/window.requestAnimationFrame"),
     new Html5SpecScan("Media", Category.MULTIMEDIA,
         "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-video-element.html")
       .addTutorial("HTML 5 Rocks Video Tutorial", "http://www.html5rocks.com/en/tutorials/video/basics/")
@@ -82,6 +84,14 @@ public class Sources {
       .addTutorial("MDN: Indexed DB Basic Concepts", "https://developer.mozilla.org/en-US/docs/IndexedDB/Basic_Concepts_Behind_IndexedDB")
       .addTutorial("MDN: Using  IndexedDB", "https://developer.mozilla.org/en-US/docs/IndexedDB/Using_IndexedDB")
       .addTutorial("HTML 5 Rocks: A simple TODO list using HTML5 IndexedDB", "http://www.html5rocks.com/en/tutorials/indexeddb/todo/"),
+    new Html5SpecScan("WebRTC", Category.CONNECTIVITY, "http://dev.w3.org/2011/webrtc/editor/webrtc.html")
+      .addTutorial("HTML5 Rocks: Getting Started with WebRTC", "http://www.html5rocks.com/en/tutorials/webrtc/basics/")
+      .addTutorial("HTML5 Rocks: WebRTC in the real world: STUN, TURN and signaling", "http://www.html5rocks.com/en/tutorials/webrtc/infrastructure/")
+      .addTutorial("MDN: Taking webcam photos", "https://developer.mozilla.org/en-US/docs/WebRTC/Taking_webcam_photos")
+      .addTutorial("Peer-to-peer communications with WebRTC", "https://developer.mozilla.org/en-US/docs/WebRTC/Peer-to-peer_communications_with_WebRTC"),
+    new Html5SpecScan("Web Audio", Category.MULTIMEDIA, "http://www.w3.org/TR/webaudio/")
+      .addTutorial("HTML5 Rocks: Getting Started with Web Audio", "http://www.html5rocks.com/en/tutorials/webaudio/intro/")
+      .addTutorial("MDN: Web Audio API", "https://developer.mozilla.org/en-US/docs/Web_Audio_API"),
     new Html5SpecScan("SVG", Category.GRAPHICS, "http://www.w3.org/TR/SVG/single-page.html"),
     new ExplicitIdlSpecScan("Typed Arrays", Category.PERFORMANCE,
         "http://www.khronos.org/registry/typedarray/specs/latest/", 
