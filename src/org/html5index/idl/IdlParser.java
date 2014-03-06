@@ -1,7 +1,9 @@
 package org.html5index.idl;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.html5index.model.Artifact;
 import org.html5index.model.DocumentationProvider;
@@ -427,6 +429,10 @@ public class IdlParser {
     if (tokenizer.ttype == '[') {
       do {
         tokenizer.nextToken();
+        if (tokenizer.ttype == ']') {
+          // empty classifier
+          break;
+        }
         String option = consumeIdentifier();
         if ("NoInterfaceObject".equals(option)) {
           if (kind != Type.Kind.GLOBAL) {
@@ -441,31 +447,34 @@ public class IdlParser {
         } else if ("Callback".equals(option)) {
           consume('=');
           consumeIdentifier();
-        } else if ("ArrayClass".equals(option) ||
-            "TreatNonCallableAsNull".equals(option) ||
-            "OverrideBuiltins".equals(option) ||
-            "Unforgeable".equals(option) ||
-            "Supplemental".equals(option) || 
-            "PrimaryGlobal".equals(option) ||
-            "SharedWorker".equals(option) ||
-            "DedicatedWorker".equals(option) ||
-            "Worker".equals(option)) { // Is Worker supposed to be the 2nd argument of Exposed?
-        } else if ("Constructor".equals(option) || "NamedConstructor".equals(option)) {
-          String name = "";
-          if (option.equals("NamedConstructor")) {
-            consume('=');
-            name = consumeIdentifier();
-          }
-          Operation c = new Operation(Artifact.CONSTRUCTOR, null, name);
-          if (tokenizer.ttype == '(') {
-            parseParameterList(c);
-          }
-          constructors.add(c);
-        } else if ("Exposed".equals(option)) {
-          consume('=');
-          consumeIdentifier();
         } else {
-          throw new RuntimeException("Unrecognized option: " + option);
+          if ("ArrayClass".equals(option) ||
+              "TreatNonCallableAsNull".equals(option) ||
+              "OverrideBuiltins".equals(option) ||
+              "Unforgeable".equals(option) ||
+              "Supplemental".equals(option) ||
+              "PrimaryGlobal".equals(option) ||
+              "SharedWorker".equals(option) ||
+              "DedicatedWorker".equals(option) ||
+              "Worker".equals(option) ||
+              isBlinkClassifier(option)) { // Is Worker supposed to be the 2nd argument of Exposed?
+          } else if ("Constructor".equals(option) || "NamedConstructor".equals(option)) {
+            String name = "";
+            if (option.equals("NamedConstructor")) {
+              consume('=');
+              name = consumeIdentifier();
+            }
+            Operation c = new Operation(Artifact.CONSTRUCTOR, null, name);
+            if (tokenizer.ttype == '(') {
+              parseParameterList(c);
+            }
+            constructors.add(c);
+          } else if ("Exposed".equals(option)) {
+            consume('=');
+            consumeIdentifier();
+          } else {
+            throw new RuntimeException("Unrecognized option: " + option);
+          }
         }
       } while(tokenizer.ttype == ',');
       consume(']');
@@ -504,6 +513,72 @@ public class IdlParser {
         documentationProvider.addDocumentation(constructor);
       }
     }
+  }
+
+  enum IgnoreType {
+    PAREN, EQUALS, BOOL;
+  }
+
+  Map<String, IgnoreType> CLASSIFIERS_TO_IGNORE = new HashMap<String, IgnoreType>() {
+    {
+      put("RuntimeEnabled", IgnoreType.EQUALS);
+      put("WillBeGarbageCollected", IgnoreType.BOOL);
+      put("ActiveDOMObject", IgnoreType.BOOL);
+      put("ImplementedAs", IgnoreType.EQUALS);
+      put("Conditional", IgnoreType.EQUALS);
+      put("SetWrapperReferenceTo", IgnoreType.PAREN);
+      put("SetWrapperReferenceFrom", IgnoreType.EQUALS);
+      put("Custom", IgnoreType.EQUALS);
+      put("ConstructorCallWith", IgnoreType.EQUALS);
+      put("PerContextEnabled", IgnoreType.BOOL);
+      put("SpecialWrapFor", IgnoreType.EQUALS);
+      put("RaisesException", IgnoreType.EQUALS);
+      put("CheckSecurity=", IgnoreType.EQUALS);
+      put("GlobalContext", IgnoreType.EQUALS);
+      put("SpecialWrapFor", IgnoreType.EQUALS);
+      put("CustomConstructor", IgnoreType.PAREN);
+      put("CheckSecurity", IgnoreType.EQUALS);
+    }
+  };
+
+  private boolean isBlinkClassifier(String option) {
+    if (CLASSIFIERS_TO_IGNORE.containsKey(option)) {
+      IgnoreType ig = CLASSIFIERS_TO_IGNORE.get(option);
+      switch (ig) {
+        case BOOL:
+          return true;
+        case EQUALS:
+          if (tokenizer.ttype == '=') {
+            consume('=');
+            consumeIdentifier();
+            // ignore crap like Window&Worker of alg | alg2
+            while (tokenizer.ttype == '&' || tokenizer.ttype == '|') {
+              consume(tokenizer.ttype);
+              consumeIdentifier();
+            }
+          }
+          return true;
+        case PAREN:
+          if (tokenizer.ttype == '(') {
+            consume('(');
+            while (tokenizer.ttype != ')') {
+              tokenizer.nextToken();
+            }
+            consume(')');
+          }
+          return true;
+      }
+    }
+    return "RuntimeEnabled".equals(option) || "WillBeGarbageCollected".equals(option) ||
+        "ActiveDOMObject".equals(option) || "EventConstructor".equals(option) ||
+        "GlobalContext".equals(option) || "Conditional".equals(option)
+        || "ImplementedAs".equals(option) || "ConstructorCallWith".equals(option)
+        || "RaisesException".equals(option) || "NoHeader".equals(option) || "Custom".equals(option)
+        || "SpecialWrapFor".equals(option) || "CustomConstructor".equals(option) || "DoNotCheckConstants".equals(option)
+        || "SetWrapperReferenceFrom".equals(option) || "DependentLifetime".equals(option)
+        || "StrictTypeChecking".equals(option) || "SetWrapperReferenceTo".equals(option)
+        || "CheckSecurity".equals(option);
+
   }
 
   private void parseModule() {
