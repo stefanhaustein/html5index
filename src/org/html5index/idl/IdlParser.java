@@ -493,6 +493,9 @@ public class IdlParser {
           }
         } else if ("Global".equals(option) || "PrimaryGlobal".equals(option)) {
           kind = Type.Kind.GLOBAL;
+          if ("PrimaryGlobal".equals(option)) {
+            modifiers |= Type.PRIMARY_GLOBAL;
+          }
           if (tokenizer.ttype == '=') {  // I think this case has been replaced with [Exposed]
             consume('=');
             consumeIdentifier();

@@ -15,6 +15,7 @@ public class Type extends Artifact {
 
   public static final int ARRAY_CLASS = 256;
   public static final int OVERRIDE_BUILTINS = 512;
+  public static final int PRIMARY_GLOBAL = 1024;
   
   private Kind kind = Kind.NO_INTERFACE_OBJECT;
   // TODO: null the objects and create on demand only?
