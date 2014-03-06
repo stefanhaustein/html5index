@@ -18,6 +18,52 @@ import org.html5index.util.Tokenizer;
 
 
 public class IdlParser {
+  public static final int IGNORE = -1;
+  public static final int IGNORE_EQUALS = -2;
+  public static final int IGNORE_PAREN = -4;
+  
+  Map<String, Integer> EXTENDED_ATTRIBUTES = new HashMap<String, Integer>() {
+    {
+      put("ArrayClass", Type.ARRAY_CLASS);
+      put("OverrideBuiltins", Type.OVERRIDE_BUILTINS);
+      put("Unforgeable", Artifact.UNFORGEABLE);
+ 
+      // From old spec versions?
+      put("Supplemental", IGNORE);
+      put("TreatNonCallableAsNull", IGNORE);
+      
+      // Ignored for now because the spec is wrong
+      put("SharedWorker", IGNORE);
+      put("DedicatedWorker", IGNORE);
+      put("Worker", IGNORE);
+      
+      // Blink
+      put("ActiveDOMObject", IGNORE);
+      put("CheckSecurity", IGNORE_EQUALS);
+      put("Conditional", IGNORE_EQUALS);
+      put("ConstructorCallWith", IGNORE_EQUALS);
+      put("Custom", IGNORE_EQUALS);
+      put("CustomConstructor", IGNORE);
+      put("DependentLifetime", IGNORE);
+      put("DoNotCheckConstants", IGNORE);
+      put("EventConstructor", IGNORE);
+      put("GlobalContext", IGNORE_EQUALS);
+      put("NoHeader", IGNORE);
+      put("ImplementedAs", IGNORE_EQUALS);
+      put("PerContextEnabled", IGNORE);
+      put("RaisesException", IGNORE_EQUALS);
+      put("RuntimeEnabled", IGNORE_EQUALS);
+      put("SetWrapperReferenceTo", IGNORE_PAREN);
+      put("SetWrapperReferenceFrom", IGNORE_EQUALS);
+      put("StrictTypeChecking", IGNORE); 
+      put("SpecialWrapFor", IGNORE_EQUALS);
+      put("WillBeGarbageCollected", IGNORE);
+      put("CustomConstructor", IGNORE_PAREN);
+      put("CheckSecurity", IGNORE_EQUALS);
+    }
+  };
+
+  
   Tokenizer tokenizer;
   Model model;
   Library lib;
@@ -426,6 +472,7 @@ public class IdlParser {
   private void parseClassifier() {
     List<Operation> constructors = new ArrayList<Operation>();
     Type.Kind kind = Type.Kind.INTERFACE;
+    int modifiers = 0;
     if (tokenizer.ttype == '[') {
       do {
         tokenizer.nextToken();
@@ -436,46 +483,58 @@ public class IdlParser {
         String option = consumeIdentifier();
         if ("NoInterfaceObject".equals(option)) {
           if (kind != Type.Kind.GLOBAL) {
-            kind = Type.Kind.NO_OBJECT;
+            kind = Type.Kind.NO_INTERFACE_OBJECT;
           }
-        } else if ("Global".equals(option)) {
+        } else if ("Global".equals(option) || "PrimaryGlobal".equals(option)) {
           kind = Type.Kind.GLOBAL;
-          if (tokenizer.ttype == '=') {
+          if (tokenizer.ttype == '=') {  // I think this case has been replaced with [Exposed]
             consume('=');
             consumeIdentifier();
           }
         } else if ("Callback".equals(option)) {
           consume('=');
           consumeIdentifier();
-        } else {
-          if ("ArrayClass".equals(option) ||
-              "TreatNonCallableAsNull".equals(option) ||
-              "OverrideBuiltins".equals(option) ||
-              "Unforgeable".equals(option) ||
-              "Supplemental".equals(option) ||
-              "PrimaryGlobal".equals(option) ||
-              "SharedWorker".equals(option) ||
-              "DedicatedWorker".equals(option) ||
-              "Worker".equals(option) ||
-              isBlinkClassifier(option)) { // Is Worker supposed to be the 2nd argument of Exposed?
-          } else if ("Constructor".equals(option) || "NamedConstructor".equals(option)) {
-            String name = "";
-            if (option.equals("NamedConstructor")) {
-              consume('=');
-              name = consumeIdentifier();
-            }
-            Operation c = new Operation(Artifact.CONSTRUCTOR, null, name);
-            if (tokenizer.ttype == '(') {
-              parseParameterList(c);
-            }
-            constructors.add(c);
-          } else if ("Exposed".equals(option)) {
+        } else if ("Constructor".equals(option) || "NamedConstructor".equals(option)) {
+          String name = "";
+          if (option.equals("NamedConstructor")) {
             consume('=');
-            consumeIdentifier();
-          } else {
+            name = consumeIdentifier();
+          }
+          Operation c = new Operation(Artifact.CONSTRUCTOR, null, name);
+          if (tokenizer.ttype == '(') {
+            parseParameterList(c);
+          }
+          constructors.add(c);
+        } else if ("Exposed".equals(option)) {
+          consume('=');  // TODO(haustein) Fully support this.
+          consumeIdentifier();
+        } else {
+          Integer modifier = EXTENDED_ATTRIBUTES.get(option);
+          if (modifier == null) {
             throw new RuntimeException("Unrecognized option: " + option);
+          } else if (modifier == IGNORE_EQUALS) {
+            if (tokenizer.ttype == '=') {
+              consume('=');
+              consumeIdentifier();
+              // ignore crap like Window&Worker of alg | alg2
+              while (tokenizer.ttype == '&' || tokenizer.ttype == '|') {
+                consume(tokenizer.ttype);
+                consumeIdentifier();
+              }
+            }
+          } else if (modifier == IGNORE_PAREN) {
+            if (tokenizer.ttype == '(') {
+              consume('(');
+              while (tokenizer.ttype != ')') {
+                tokenizer.nextToken();
+              }
+              consume(')');
+            }
+          } else if (modifier != IGNORE) {
+            modifiers |= modifier;
           }
         }
+        
       } while(tokenizer.ttype == ',');
       consume(']');
     }
@@ -505,6 +564,7 @@ public class IdlParser {
           "dictionary, interface, callback or exception expected, got: " + tokenizer.sval);
     }
     if (type != null) {
+      type.setModifier(modifiers);
       for (Operation constructor: constructors) {
         if (constructor.getName().isEmpty()) {
           constructor.setName(type.getName());
@@ -517,68 +577,6 @@ public class IdlParser {
 
   enum IgnoreType {
     PAREN, EQUALS, BOOL;
-  }
-
-  Map<String, IgnoreType> CLASSIFIERS_TO_IGNORE = new HashMap<String, IgnoreType>() {
-    {
-      put("RuntimeEnabled", IgnoreType.EQUALS);
-      put("WillBeGarbageCollected", IgnoreType.BOOL);
-      put("ActiveDOMObject", IgnoreType.BOOL);
-      put("ImplementedAs", IgnoreType.EQUALS);
-      put("Conditional", IgnoreType.EQUALS);
-      put("SetWrapperReferenceTo", IgnoreType.PAREN);
-      put("SetWrapperReferenceFrom", IgnoreType.EQUALS);
-      put("Custom", IgnoreType.EQUALS);
-      put("ConstructorCallWith", IgnoreType.EQUALS);
-      put("PerContextEnabled", IgnoreType.BOOL);
-      put("SpecialWrapFor", IgnoreType.EQUALS);
-      put("RaisesException", IgnoreType.EQUALS);
-      put("CheckSecurity=", IgnoreType.EQUALS);
-      put("GlobalContext", IgnoreType.EQUALS);
-      put("SpecialWrapFor", IgnoreType.EQUALS);
-      put("CustomConstructor", IgnoreType.PAREN);
-      put("CheckSecurity", IgnoreType.EQUALS);
-    }
-  };
-
-  private boolean isBlinkClassifier(String option) {
-    if (CLASSIFIERS_TO_IGNORE.containsKey(option)) {
-      IgnoreType ig = CLASSIFIERS_TO_IGNORE.get(option);
-      switch (ig) {
-        case BOOL:
-          return true;
-        case EQUALS:
-          if (tokenizer.ttype == '=') {
-            consume('=');
-            consumeIdentifier();
-            // ignore crap like Window&Worker of alg | alg2
-            while (tokenizer.ttype == '&' || tokenizer.ttype == '|') {
-              consume(tokenizer.ttype);
-              consumeIdentifier();
-            }
-          }
-          return true;
-        case PAREN:
-          if (tokenizer.ttype == '(') {
-            consume('(');
-            while (tokenizer.ttype != ')') {
-              tokenizer.nextToken();
-            }
-            consume(')');
-          }
-          return true;
-      }
-    }
-    return "RuntimeEnabled".equals(option) || "WillBeGarbageCollected".equals(option) ||
-        "ActiveDOMObject".equals(option) || "EventConstructor".equals(option) ||
-        "GlobalContext".equals(option) || "Conditional".equals(option)
-        || "ImplementedAs".equals(option) || "ConstructorCallWith".equals(option)
-        || "RaisesException".equals(option) || "NoHeader".equals(option) || "Custom".equals(option)
-        || "SpecialWrapFor".equals(option) || "CustomConstructor".equals(option) || "DoNotCheckConstants".equals(option)
-        || "SetWrapperReferenceFrom".equals(option) || "DependentLifetime".equals(option)
-        || "StrictTypeChecking".equals(option) || "SetWrapperReferenceTo".equals(option)
-        || "CheckSecurity".equals(option);
-
   }
 
   private void parseModule() {

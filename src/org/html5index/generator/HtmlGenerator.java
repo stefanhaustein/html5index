@@ -137,7 +137,7 @@ public class HtmlGenerator {
   }
   
   public String kindTitle(Type.Kind kind) {
-    if (kind == Type.Kind.NO_OBJECT) {
+    if (kind == Type.Kind.NO_INTERFACE_OBJECT) {
       return "NoObject";
     }
     String s = kind.toString().replace("_", "-<br>");
@@ -219,7 +219,7 @@ public class HtmlGenerator {
   
   int listKind(Type.Kind kind) {
     if (kind == Type.Kind.GLOBAL || kind == Type.Kind.INTERFACE || kind == Type.Kind.PARTIAL ||
-        kind == Type.Kind.PARTIAL  || kind == Type.Kind.NO_OBJECT || 
+        kind == Type.Kind.PARTIAL  || kind == Type.Kind.NO_INTERFACE_OBJECT || 
         kind == Type.Kind.CALLBACK_INTERFACE || kind == Type.Kind.ARRAY_OBJECT) {
       return 2;
     }
@@ -344,7 +344,7 @@ public class HtmlGenerator {
     }
     
     if (type.getImplementedBy().size() != 0) {
-      writer.markup("<p>").text(type.getKind() == Type.Kind.NO_OBJECT ? "Implemented by " : "Extended by ");
+      writer.markup("<p>").text(type.getKind() == Type.Kind.NO_INTERFACE_OBJECT ? "Implemented by " : "Extended by ");
       boolean first = true;
       for (Type t: type.getImplementedBy()) {
         if (first) {
@@ -367,7 +367,7 @@ public class HtmlGenerator {
       writeLinkedType(writer, type.getSuperType());
       writer.markup(" type.</p>");
       break;
-    case NO_OBJECT: 
+    case NO_INTERFACE_OBJECT: 
       writer.markup(
           "<p>This type groups properties and / or operations together for documentation " +
           "purposes and does not have an explicit JavaScript representation.</p>");
@@ -640,7 +640,7 @@ public class HtmlGenerator {
   public void writeOperations(HtmlWriter writer, Collection<Operation> operations) throws IOException {
     for (Operation operation: operations) {
       writer.markup("<tr id='").text(operation.getName()).markup("'><td>");
-      if (operation.isStatic()) {
+      if (operation.hasModifier(Artifact.STATIC)) {
         writer.text("static ");
       }
       Type type = operation.getType();
@@ -681,7 +681,7 @@ public class HtmlGenerator {
       writer.markup("<tr id='").text(property.getName()).markup("'><td>");
       if (property.hasModifier(Artifact.CONSTANT)) {
         writer.text("const ");
-      } else if (property.isStatic()) {
+      } else if (property.hasModifier(Artifact.STATIC)) {
         writer.text("static ");
       }
       writeLinkedType(writer, property.getType());

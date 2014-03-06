@@ -19,10 +19,7 @@ public abstract class Member extends Artifact {
   public Type getType() {
     return type;
   }
-  
-  public boolean isStatic() {
-    return owner.getName().startsWith("Meta<");
-  }
+
 
   public String getQualifiedName() {
     return owner.getQualifiedName() + "." + name;

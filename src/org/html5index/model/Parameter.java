@@ -9,11 +9,9 @@ public class Parameter extends Artifact {
     this.type = type;
   }
   
-  
   public Type getType() {
     return type;
   }
-
 
   @Override
   public Library getLibrary() {
@@ -24,14 +22,7 @@ public class Parameter extends Artifact {
     return (type == null ? "?" : type.getLink()) + " " + name;
   }
 
-
-  public int getModifiers() {
-    return modifiers;
-  }
-
-
   public void setType(Type newType) {
     this.type = newType;
   }
-
 }

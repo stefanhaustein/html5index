@@ -9,6 +9,9 @@ public abstract class Artifact implements Comparable<Artifact> {
   public static final int READ_ONLY = 8;
   public static final int STATIC = 16;
   public static final int VARIADIC = 32;
+  public static final int UNFORGEABLE = 64;
+
+  // Modifiers for specific artifacts start at 256.
 
   protected String name;
   protected String documentation;
@@ -79,9 +82,15 @@ public abstract class Artifact implements Comparable<Artifact> {
     return getNameForCompare().compareToIgnoreCase(other.getNameForCompare());
   }
   
+  public int getModifiers() {
+    return modifiers;
+  }
+
   public boolean hasModifier(int modifier) {
     return (modifiers & modifier) == modifier;
   }
   
-
+  public final void setModifier(int modifier) {
+    modifiers |= modifier;
+  }
 }
