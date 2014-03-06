@@ -22,7 +22,13 @@ public class IdlParser {
   public static final int IGNORE_EQUALS = -2;
   public static final int IGNORE_PAREN = -4;
   
-  Map<String, Integer> EXTENDED_ATTRIBUTES = new HashMap<String, Integer>() {
+  /**
+   * Extended attributes that are stored as simple modifiers in Type or can
+   * be ignored. Extended attributes for which we store the value are handled
+   * separately in code.
+   */
+  @SuppressWarnings("serial")
+  private static final Map<String, Integer> EXTENDED_ATTRIBUTES = new HashMap<String, Integer>() {
     {
       put("ArrayClass", Type.ARRAY_CLASS);
       put("OverrideBuiltins", Type.OVERRIDE_BUILTINS);
