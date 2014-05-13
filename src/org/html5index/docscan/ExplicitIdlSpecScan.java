@@ -182,8 +182,8 @@ public class ExplicitIdlSpecScan extends AbstractSpecScan {
       lib.setDocumentationProvider(this);
       String idl =  DomLoader.loadText(idlUrl);
       new IdlParser(lib, idl).parse();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    } catch (Exception e) {
+      throw new RuntimeException("Loading url " + idlUrl + " failed.", e);
     }
   }
 }

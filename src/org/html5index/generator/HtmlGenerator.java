@@ -13,9 +13,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.html5index.docscan.Sources;
+import org.html5index.docscan.DefaultModelReader;
 import org.html5index.model.Artifact;
-import org.html5index.model.DocumentationProvider;
 import org.html5index.model.DocumentationProvider.Category;
 import org.html5index.model.Library;
 import org.html5index.model.Member;
@@ -26,9 +25,9 @@ import org.html5index.model.Property;
 import org.html5index.model.Type;
 import org.html5index.util.HtmlWriter;
 
-public class HtmlGenerator {
+public class HtmlGenerator implements Runnable {
 
-  Model model = new Model();
+  Model model;
   
   static HtmlWriter createWriter(String name) throws IOException {
     HtmlWriter writer = new HtmlWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream("gen/"+ name +".html"), "utf-8")));
@@ -46,19 +45,22 @@ public class HtmlGenerator {
     writer.close();
   }
   
-  void readModel() throws IOException {
-    for (DocumentationProvider provider: Sources.SOURCES) {
-      Library lib = new Library(provider.getTitle(), true);
-      model.addLibrary(lib);
-      provider.readDocumentation(lib);
-    }
+  public HtmlGenerator(Model model) {
+	this.model = model;
   }
-  
-  public void writeAll() throws IOException {
-    writeIndex();
-    writeAbout();
-    writeModel();
-    writeGlobalIndex();
+
+  public void run() {
+    try {
+      writeIndex();
+      writeAbout();
+      writeModel();
+      writeGlobalIndex();
+    
+      HtmlWriter.copyFile("res/static/favicon.ico", "gen/favicon.ico");
+      HtmlWriter.copyFile("res/static/style.css", "gen/style.css");
+    } catch(IOException e) {
+      throw new RuntimeException(e);
+    }
   }
   
   public void writeModel() throws IOException {
@@ -583,6 +585,18 @@ public class HtmlGenerator {
     writer.text("corresponding tutorials on the library overview pages.");
     writer.markup("</p>\n<p>");
 
+    writer.markup("<h3>New: Machine Readable Output</h3>");
+    writer.markup("</p>");
+    writer.text("Ok, it doesn't really work yet, but if you are interested in using this data ");
+    writer.text("for a JS editor suggest feature, take a look at the current progress: ");
+    writer.markup("<a href='jsdoc/' target='_top'>JsDoc<a> / <a href='json/' target='_top'>JSON</a>. ");
+    writer.markup("</p>\n<p>");
+
+    writer.text("You may also be interested in the ");
+    writer.markup("<a href='https://github.com/stefanhaustein/html5index' target='_top'>html5index github project</a>. ");
+    writer.text("If you'd like to contribute or have ideas or suggestions, contact me via ");
+    writer.markup("<a href='https://plus.google.com/103079366341809665805/posts' target='_top'>G+</a>.");
+    
     writer.markup("</p><hr><center>\n");
     
     if (inFrame) {
@@ -773,11 +787,7 @@ public class HtmlGenerator {
   
   
   public static void main(String[] args) throws IOException {
-    HtmlGenerator generator = new HtmlGenerator();
-    generator.readModel();
-    generator.writeAll();
-    
-    HtmlWriter.copyFile("res/static/favicon.ico", "gen/favicon.ico");
-    HtmlWriter.copyFile("res/static/style.css", "gen/style.css");
+    HtmlGenerator generator = new HtmlGenerator(DefaultModelReader.readModel());
+    generator.run();
   }
 }
