@@ -596,10 +596,10 @@ public class HtmlGenerator implements Runnable {
     writer.markup("<a href='https://github.com/stefanhaustein/html5index' target='_top'>html5index github project</a>. ");
     writer.text("If you'd like to contribute or have ideas or suggestions, contact me via ");
     writer.markup("<a href='https://plus.google.com/103079366341809665805/posts' target='_top'>G+</a>.");
+    writer.markup("</p>\n");
     
-    writer.markup("</p><hr><center>\n");
-    
-    if (inFrame) {
+    if (inFrame && false) {
+      writer.markup("<hr><center>\n");
       writer.markup("<script async src='//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js'></script>");
       writer.markup("<!-- about -->");
       writer.markup("<ins class='adsbygoogle'\n");
@@ -615,8 +615,9 @@ public class HtmlGenerator implements Runnable {
       writer.markup("  var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);\n");
       writer.markup("})()\n");
       writer.markup("</script>\n");
+      writer.markup("</center>");
     }
-    writer.markup("</center><hr><p id='frames'><small style='color:gray'>*) ");
+    writer.markup("<hr><p id='frames'><small style='color:gray'>*) ");
     if (inFrame) {
       writer.text("This site relies on HTML frames. If you don't see the index of libraries ");
       writer.text("and types to the left of this document, load the full frame set by ");

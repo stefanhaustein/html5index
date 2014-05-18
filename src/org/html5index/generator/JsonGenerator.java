@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -56,6 +57,10 @@ public class JsonGenerator implements Runnable {
 			out.writeString("type", "string");
 			return;
 		}
+		if (name.equals("Array")) {
+			out.writeString("type", "array");
+			return;
+		}
 
 		switch(type.getKind()) {
 		case PRIMITIVE:
@@ -96,6 +101,8 @@ public class JsonGenerator implements Runnable {
 			indexWriter.println("</ul>");
 			indexWriter.println("<p>Please copy the files if you plan to work with them -- ");
 			indexWriter.println("hot-linking will probably overload this server.</p>");
+			indexWriter.println("<p>For a rough description of the format, please refer to ");
+			indexWriter.println("<a href='http://tidej.net/javascript-schema.html'>this link</a>.");
 			indexWriter.println("</body>");
 			indexWriter.println("</html>");
 			indexWriter.close();
@@ -119,16 +126,27 @@ public class JsonGenerator implements Runnable {
 		out.writeString("name", name);
 		out.writeString("description", "Generated " + new Date() + (ecmaOnly ? "" : " from the HTML5 specifications") + " by the html5index.org generator.");
 		out.openObject("definitions");
+
+		// TODO(haustein) Make this more similar to Window...
+		ArrayList<Type> globals = new ArrayList<Type>();
 		
 		for (Library library: model.getLibraries()) {
 			if (!ecmaOnly || library.getName().equals("ECMAScript")) {
 				for (Type type: library.getTypes()) {
-					generateType(out, type);
+					if (type.getKind() == Type.Kind.GLOBAL) {
+						globals.add(type);
+					} else {
+						generateType(out, type);
+					}
 				}
 			}
 		}
-		 
 		out.closeObject(); // definitions
+
+		out.openObject("globals");
+		generateGlobals(out, globals);
+		out.closeObject();
+		
 		out.close();
 	}
 
@@ -164,8 +182,27 @@ public class JsonGenerator implements Runnable {
 		out.closeObject();
 	}
 	
+	void generateGlobals(JsonWriter out, Collection<Type> globals) {
+		out.openObject("properties");
+		for (Type g: globals) {
+			for (Property p: g.getOwnAndInterfaceProperties()) {
+				generateProperty(out, p);
+			}
+		}
+		out.closeObject();
+
+		out.openObject("operations");
+		for (Type g: globals) {
+			for (Operation op: g.getOwnAndInterfaceOperations()) {
+				generateOperation(out, op);
+			}
+		}
+		out.closeObject();
+	}
+	
 	void generateInterface(JsonWriter out, Type type) {
 		out.openObject(getQualifiedName(type));
+
 		out.writeString("type", "object");
 		out.writeString("library", type.getLibrary().getName());
 		if (type.getSuperType() != null) {
@@ -207,7 +244,7 @@ public class JsonGenerator implements Runnable {
 			out.closeObject();
 		}
 		
-		out.closeObject();
+		out.closeObject();  // Interface
 	}
 	
 	void generateType(JsonWriter out, Type type) {
