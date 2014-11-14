@@ -1,10 +1,5 @@
 package org.html5index.idl;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.html5index.model.Artifact;
 import org.html5index.model.DocumentationProvider;
 import org.html5index.model.Library;
@@ -15,6 +10,11 @@ import org.html5index.model.Property;
 import org.html5index.model.Type;
 import org.html5index.model.Type.Kind;
 import org.html5index.util.Tokenizer;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class IdlParser {
@@ -164,14 +164,18 @@ public class IdlParser {
         while (tokenizer.nextToken() != '}');  // TODO: Support serializers
         consume('}');
         consume(';');
+      } else if ("typedef".equals(sval)) {
+        parseTypedef();
       } else {
         Operation operation = parseOperation(modifiers);
-        Operation old = type.getOperation(operation.getName());
-        if (old != null) {
-          old.merge(model, operation);
-        } else {
-          type.addOperation(operation);
-          documentationProvider.addDocumentation(operation);
+        if (operation != null) {
+          Operation old = type.getOperation(operation.getName());
+          if (old != null) {
+            old.merge(model, operation);
+          } else {
+            type.addOperation(operation);
+            documentationProvider.addDocumentation(operation);
+          }
         }
       }
     }
@@ -236,6 +240,12 @@ public class IdlParser {
       consumeIdentifier();
     } else {
       type = parseType();
+    }
+
+    // iterator declaration, not an op
+    if (type != null && type.getIterableKeyType() != null) {
+      consume(';');
+      return null;
     }
     String name;
     if (tokenizer.ttype == '(' && special.length() != 0) {
@@ -316,15 +326,31 @@ public class IdlParser {
       Type baseType = parseType();
       consume('>');
       type = new Type("sequence<" + baseType.getName() + ">", Type.Kind.SEQUENCE, baseType);
-    } else {
-      type = lib.getType(name);
-      if (type == null) {
-        type = model.getType(name);
-        if (type == null) {
-          type = new Type(name);
-          model.addHiddenType(type);
-        }
+    } else if (name.equals("iterable")) {
+      consume('<');
+      Type keyType = parseType();
+      Type valueType = null;
+      if (tokenizer.ttype == ',') {
+        valueType = parseType();
       }
+      consume('>');
+      type = new Type("iterable<" + keyType.getName() + (valueType != null ? "," + valueType.getName() : "") +">", Type.Kind.SEQUENCE, keyType);
+      type.setIterable(keyType, valueType);
+    } else if (tokenizer.ttype == '<') {
+      // parse arbitrary generic
+      consume('<');
+      Type baseType = parseType();
+      String genericSignature = "<" + baseType.getName();
+      while (tokenizer.ttype == ',') {
+        consume(',');
+        Type gType = parseType();
+        genericSignature += "," + gType.getName();
+      }
+      genericSignature += ">";
+      consume('>');
+      type = new Type(getOrMakeType(name) + genericSignature, Type.Kind.GENERIC, baseType);
+    } else {
+      type = getOrMakeType(name);
       if (tokenizer.ttype == '?') {
         type = new Type(type.getName() + "?", Type.Kind.NULLABLE, type);
         tokenizer.nextToken();
@@ -341,7 +367,20 @@ public class IdlParser {
     }
     return type;
   }
-  
+
+  private Type getOrMakeType(String name) {
+    Type type;
+    type = lib.getType(name);
+    if (type == null) {
+      type = model.getType(name);
+      if (type == null) {
+        type = new Type(name);
+        model.addHiddenType(type);
+      }
+    }
+    return type;
+  }
+
   private void consume(int type) {
     if (type != tokenizer.ttype) {
       fail("Expected type: " + tokenizer.ttypeToString(type));
@@ -498,7 +537,17 @@ public class IdlParser {
           }
           if (tokenizer.ttype == '=') {  // I think this case has been replaced with [Exposed]
             consume('=');
-            consumeIdentifier();
+            if (tokenizer.ttype == '(') {
+              consume('(');
+              consumeIdentifier();
+              while (tokenizer.ttype == ',') {
+                consume(',');
+                consumeIdentifier();
+              }
+              consume(')');
+            } else {
+              consumeIdentifier();
+            }
           }
         } else if ("Callback".equals(option)) {
           consume('=');
@@ -516,7 +565,17 @@ public class IdlParser {
           constructors.add(c);
         } else if ("Exposed".equals(option)) {
           consume('=');  // TODO(haustein) Fully support this.
-          consumeIdentifier();
+          if (tokenizer.ttype == '(') {
+            consume('(');
+            consumeIdentifier();
+            while (tokenizer.ttype == ',') {
+              consume(',');
+              consumeIdentifier();
+            }
+            consume(')');
+          } else {
+            consumeIdentifier();
+          }
         } else {
           Integer modifier = EXTENDED_ATTRIBUTES.get(option);
           if (modifier == null) {

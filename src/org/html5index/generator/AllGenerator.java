@@ -8,9 +8,10 @@ public class AllGenerator {
 	public static void main(String[] args) {
 		Model model = DefaultModelReader.readModel();
 
-		new HtmlGenerator(model).run();
-		new JsonGenerator(model).run();
-		new JsdocGenerator(model).run();
+//		new HtmlGenerator(model).run();
+//		new JsonGenerator(model).run();
+//		new JsdocGenerator(model).run();
+		new GwtElementalGenerator(model).run();
 	}
 
 }

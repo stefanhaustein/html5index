@@ -7,10 +7,22 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 public class Type extends Artifact {
-  
+
+  private Type iterableKeyType;
+  private Type iterableValueType;
+
+  public void setIterable(Type keyType, Type valueType) {
+    this.iterableKeyType = keyType;
+    this.iterableValueType = valueType;
+  }
+
+  public Type getIterableKeyType() {
+    return iterableKeyType;
+  }
+
   public enum Kind {
     ARRAY_OBJECT, INTERFACE, GLOBAL, NO_INTERFACE_OBJECT, PRIMITIVE, EXCEPTION, DICTIONARY, ALIAS, UNION, 
-    ENUM, SEQUENCE, ARRAY, NULLABLE, PARTIAL, CALLBACK_FUNCTION, CALLBACK_INTERFACE
+    ENUM, SEQUENCE, ARRAY, NULLABLE, PARTIAL, CALLBACK_FUNCTION, GENERIC, PROMISE, CALLBACK_INTERFACE
   }
 
   public static final int ARRAY_CLASS = 256;
