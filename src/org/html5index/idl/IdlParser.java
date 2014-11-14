@@ -226,9 +226,16 @@ public class IdlParser {
  
   private Operation parseOperation(int modifiers) {
     StringBuilder special = new StringBuilder();
+    Operation.Special specialType = Operation.Special.NONE;
+
     while ("getter".equals(tokenizer.sval) || "setter".equals(tokenizer.sval) ||
         "deleter".equals(tokenizer.sval) || "creator".equals(tokenizer.sval) ||
         "legacycaller".equals(tokenizer.sval)) {
+      if ("getter".equals(tokenizer.sval)) {
+        specialType = Operation.Special.GETTER;
+      } else if ("setter".equals(tokenizer.sval)) {
+        specialType = Operation.Special.SETTER;
+      }
       if (special.length() > 0) {
         special.append(' ');
       }
@@ -254,6 +261,7 @@ public class IdlParser {
       name = consumeIdentifier();
     }
     Operation op = new Operation(modifiers, type, name);
+    op.setSpecial(specialType);
     parseParameterList(op);
     consume(';');
     return op;

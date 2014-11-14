@@ -25,4 +25,8 @@ public class Parameter extends Artifact {
   public void setType(Type newType) {
     this.type = newType;
   }
+
+  public boolean isVariadic() {
+    return (modifiers & Parameter.VARIADIC) != 0;
+  }
 }

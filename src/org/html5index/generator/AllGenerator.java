@@ -1,6 +1,7 @@
 package org.html5index.generator;
 
 import org.html5index.docscan.DefaultModelReader;
+import org.html5index.generator.elemental.GwtElementalGenerator;
 import org.html5index.model.Model;
 
 public class AllGenerator {

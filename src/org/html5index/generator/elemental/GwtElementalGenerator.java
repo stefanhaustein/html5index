@@ -1,6 +1,5 @@
-package org.html5index.generator;
+package org.html5index.generator.elemental;
 
-import com.squareup.javawriter.JavaWriter;
 import org.html5index.docscan.DefaultModelReader;
 import org.html5index.model.Artifact;
 import org.html5index.model.Library;
@@ -39,6 +38,7 @@ public class GwtElementalGenerator implements Runnable {
       "long",
       "long long",
       "number",
+      "octet",
       "short",
       "unsigned int",
       "unsigned long",
@@ -85,11 +85,18 @@ public class GwtElementalGenerator implements Runnable {
         }
       }
       for (Type t : mergedTypes.values()) {
+        if (t.getKind() == Type.Kind.ALIAS || t.getKind() == Type.Kind.PARTIAL ||
+            t.getKind() == Type.Kind.SEQUENCE) {
+          continue;
+        }
+        System.out.println("Writing " + mapJavaType(t));
         generateInterface(t);
       }
 
     } catch (Exception e) {
       throw new RuntimeException(e);
+    } finally {
+      System.out.println("Done");
     }
   }
 
@@ -105,35 +112,49 @@ public class GwtElementalGenerator implements Runnable {
     writer.close();
   }
 
-  public String jsdocType(Type type) {
-    if (type == null) {
-      return "void";
-    }
-    String name = type.getName();
+  public String mapJavaType(Type type) {
+    String name = "void";
+    if (type != null) {
+      name = type.getName();
 
-    // This should really be a type flag.
-    boolean optional = name.endsWith("?");
-    if (optional) {
-      name = name.substring(0, name.length() - 1);
+      // This should really be a type flag.
+      boolean optional = name.endsWith("?");
+      if (optional) {
+        name = name.substring(0, name.length() - 1);
+      }
+      if (isNumber(type)) {
+        return numberType(type.getName());
+      } else if (name.equals("Boolean")) {
+        name = "JsBoolean";
+      } else if (name.equals("Number")) {
+        name = "JsNumber";
+      } else if (name.equals("any")) {
+        name = "Object";
+      } else if (name.equals("object")) {
+        name = "JsObject";
+      } else if (name.equals("DOMString") || name.equals("string")) {
+        name = "String";
+      } else if (name.equals("Array")) {
+        name = "JsArray";
+      } else if (name.startsWith("sequence<")) {
+        name = "JsArrayLike" + name.substring(name.indexOf('<'));
+      }
     }
+    return name;
+  }
 
-    if (name.equals("any")) {
-      name = "JsObject";
-    } else if (name.equals("object")) {
-      name = "gwt.JsObject";
-    } else if (name.equals("DOMString") || name.equals("string")) {
-      name = "String";
-    } else if (name.equals("Array")) {
-      name = "gwt.JsArray";
-    } else if (name.startsWith("sequence<")) {
-      name = "gwt.JsArrayLike" + name.substring(name.indexOf('<'));
-    } else {
+  public String qualifiedType(Type type) {
+
+    String name = mapJavaType(type);
+
+    if (!"String".equals(name) || !"Object".equals(name)) {
       name = "gwt." + name;
     }
 
+    if (type == null) {
+      return name;
+    }
     switch (type.getKind()) {
-      case PRIMITIVE:
-        return (Arrays.binarySearch(NUMBER_TYPES, name) < 0) ? name : numberType(name);
       case UNION:
         System.err.println("Union type encountered " + type.getName());
         return name;
@@ -146,6 +167,9 @@ public class GwtElementalGenerator implements Runnable {
   private String numberType(String name) {
     if (name.contains("long")|| name.equals("number")) {
       return "double";
+    }
+    if ("octet".equals(name)) {
+      return "byte";
     }
     if (name.contains("unsigned")) {
       name = name.substring("unsigned ".length());
@@ -165,28 +189,54 @@ public class GwtElementalGenerator implements Runnable {
     if (op.getDocumentationSummary() != null) {
       javaDoc.append(documentation(op));
     }
+    writer.emitEmptyLine();
 
     int pcount = 0;
     for (Parameter p : op.getParameters()) {
-      javaDoc.append(
-          "@param {" + javaType(p) + "} " + name(p, pcount++) + " " + documentation(p) + "\n");
+      javaDoc.append("@param " + name(p, pcount++) + " " + documentation(p) + "\n");
     }
 
     if (op.hasModifier(Operation.CONSTRUCTOR)) {
       // TODO (cromwellian): handle constructor
-    } else if (op.getType() != null) {
-      javaDoc.append("@return {" + javaType(op.getType()) + "}\n");
     }
 
     writer.emitJavadoc(javaDoc.toString());
     List<String> params = new ArrayList<>();
     pcount = 0;
     for (Parameter p : op.getParameters()) {
-      params.add(javaType(p.getType()));
+      params.add((isGeneric(p, op, pcount) ? "T" : javaType(p.getType())) + (p.isVariadic() ? "..." : ""));
       params.add(name(p, pcount++));
     }
-    writer.beginMethod(javaType(op.getType()), op.getName(), Collections.emptySet(), params, null);
+    writer.beginMethod(isGenericGetter(op) ? "T" : javaType(op.getType()), op.getName(), Collections.emptySet(), params, null);
     writer.endMethod();
+    if (isGeneric(op.getType())) {
+      System.err.println("Rawtype detected, unknown parameter " + op);
+    }
+  }
+
+  private boolean isGeneric(Type type) {
+    if (type != null) {
+      for (Operation op : type.getOwnOperations()) {
+        if (isGenericGetter(op)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private boolean isGenericGetter(Operation op) {
+    return op.getSpecial() == Operation.Special.GETTER && !isNumber(op.getType()) &&
+        !"String".equals(javaType(op.getType()));
+  }
+
+  private boolean isGeneric(Parameter p, Operation op, int pCount) {
+    if (op.getSpecial() == Operation.Special.SETTER && pCount == 1) {
+      if (!isNumber(op.getType()) && !"String".equals(javaType(op.getType()))) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private String name(Parameter p, int paramNum) {
@@ -194,7 +244,17 @@ public class GwtElementalGenerator implements Runnable {
   }
 
   private String javaType(Type type) {
-    return jsdocType(type);
+    if (isArray(type)) {
+      return "JsArrayLike<" + qualifiedType(handleTypeDef(type.getSuperType())) + ">";
+    }
+    return qualifiedType(handleTypeDef(type));
+  }
+
+  private boolean isArray(Type type) {
+    if (type != null && type.getKind() == Type.Kind.ARRAY && !isNumber(type.getSuperType())) {
+      return true;
+    }
+    return false;
   }
 
   private String javaType(Parameter p) {
@@ -207,13 +267,15 @@ public class GwtElementalGenerator implements Runnable {
       writer.emitEmptyLine();
       if (!p.hasModifier(Artifact.STATIC) && !p.hasModifier(Artifact.CONSTANT)) {
         writer.emitJavadoc(documentation(p));
+        maybeNullable(writer, type);
         writer.emitAnnotation("JsProperty");
         // getter
         writer.beginMethod(javaType(p.getType()), name(p), Collections.emptySet());
         writer.endMethod();
         // setter
         if (!p.hasModifier(Artifact.READ_ONLY)) {
-          writer.beginMethod(javaType(type), name(p), Collections.emptySet(),
+          writer.emitAnnotation("JsProperty");
+          writer.beginMethod((isNullable(type) ? "@Nullable" : "") + javaType(type), name(p), Collections.emptySet(),
               javaType(p.getType()), "value");
           writer.endMethod();
         }
@@ -227,13 +289,38 @@ public class GwtElementalGenerator implements Runnable {
     }
   }
 
+  private void maybeNullable(JavaWriter writer, Type type) throws IOException {
+    if (isNullable(type)) {
+      writer.emitAnnotation("@Nullable");
+    }
+  }
+
+  private boolean isNullable(Type type) {
+    return type != null && type.getName().endsWith("?");
+  }
+
   private String constantValue(Property prop) {
     return isString(prop) ? JavaWriter.stringLiteral(prop.getInitialValue()) :
         isNumber(prop.getType()) ? numberValue(prop.getInitialValue()) : prop.getInitialValue();
   }
 
   private boolean isNumber(Type type) {
-    return Arrays.binarySearch(NUMBER_TYPES, type.getName()) >= 0;
+    if (type == null) {
+      return false;
+    }
+    type = handleTypeDef(type);
+    String name = type.getName();
+    if (name.endsWith("?")) {
+      name = name.substring(0, name.length() - 1);
+    }
+    return Arrays.binarySearch(NUMBER_TYPES, name) >= 0;
+  }
+
+  private Type handleTypeDef(Type type) {
+    if (type != null && type.getKind() == Type.Kind.ALIAS) {
+      return type.getSuperType();
+    }
+    return type;
   }
 
   private String numberValue(String initialValue) {
@@ -256,24 +343,39 @@ public class GwtElementalGenerator implements Runnable {
   }
 
   public void generateInterface(Type type) {
-    try (JavaWriter writer = getJavaWriter(type.getName())) {
+    try (JavaWriter writer = getJavaWriter(mapJavaType(type))) {
       Collection<Operation> constructors = type.getConstructors();
 
-        if (type.getDocumentation() != null) {
-          writer.emitJavadoc(documentation(type));
+
+      writer.emitPackage("gwt");
+      if (type.getDocumentationSummary() != null) {
+        writer.emitJavadoc(documentation(type));
+      }
+      writer.emitAnnotation("JsType" + (constructors.size() == 0 ?
+          "" : ("(prototype = \"" + constructors.iterator().next().getName() + "\")")));
+      List<String> implementsTypes = new ArrayList<>();
+      if (type.getSuperType() != null) {
+        implementsTypes.add(javaType(type.getSuperType()));
+      } else if (type.getTypes().isEmpty()) {
+        implementsTypes.add("gwt.JsObject");
+      }
+      for (Type t : type.getTypes()) {
+        implementsTypes.add(javaType(t));
+      }
+      String genericParam = "";
+      for (Operation op : type.getOwnOperations()) {
+        if (op.getSpecial() == Operation.Special.GETTER && !op.getParameters().isEmpty() &&
+            isNumber(op.getParameters().iterator().next().getType())) {
+          if (!isNumber(op.getType())) {
+            genericParam = "<T extends " + javaType(op.getType()) + ">";
+          }
+          implementsTypes.add("JsArrayLike" + (!"".equals(genericParam) ? "<T>" : ""));
+          writer.emitAnnotation(
+              "IterateAsArray(getter = \"" + op.getName() + "\", length=\"length\")");
         }
-        writer.emitPackage("gwt");
-        writer.emitAnnotation("JsType" + (constructors.size() == 0 ?
-            "" : ("(prototype = \"" + constructors.iterator().next().getName() + "\")")));
-        List<String> implementsTypes = new ArrayList<>();
-        if (type.getSuperType() != null) {
-          implementsTypes.add(javaType(type.getSuperType()));
-        }
-        for (Type t : type.getTypes()) {
-          implementsTypes.add(javaType(t));
-        }
+      }
       try {
-        writer.beginType(javaType(type), "interface", EnumSet.of(Modifier.PUBLIC), null,
+        writer.beginType(javaType(type) + genericParam, "interface", EnumSet.of(Modifier.PUBLIC), null,
             implementsTypes.toArray(new String[implementsTypes.size()]));
         if (constructors.size() == 0) {
         } else {

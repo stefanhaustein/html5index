@@ -6,9 +6,11 @@ import java.util.List;
 public class Operation extends Member {
   private ArrayList<Parameter> parameters = new ArrayList<Parameter>();
   private String body;
+  private Special special;
 
   public Operation(int modifiers, Type type, String name) {
     super(modifiers, type, name);
+    special = Special.NONE;
   }
 
   public void addParameter(Parameter param) {
@@ -98,4 +100,13 @@ public class Operation extends Member {
     
   }
 
+  public void setSpecial(Special special) {
+    this.special = special;
+  }
+
+  public Special getSpecial() {
+    return special;
+  }
+
+  public enum Special {GETTER, SETTER, NONE}
 }
