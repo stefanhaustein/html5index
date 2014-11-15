@@ -130,7 +130,7 @@ public class GwtElementalGenerator implements Runnable {
         name = "JsNumber";
       } else if (name.equals("any")) {
         name = "Object";
-      } else if (name.equals("object")) {
+      } else if (name.equalsIgnoreCase("object")) {
         name = "JsObject";
       } else if (name.equals("DOMString") || name.equals("string")) {
         name = "String";
@@ -146,8 +146,10 @@ public class GwtElementalGenerator implements Runnable {
   public String qualifiedType(Type type) {
 
     String name = mapJavaType(type);
+    Type baseType = isArray(type) ? type.getSuperType() : type;
+    String baseName = mapJavaType(baseType);
 
-    if (!"String".equals(name) || !"Object".equals(name)) {
+    if (!"String".equals(baseName) && !"Object".equals(baseName) && !isNumber(baseType)) {
       name = "gwt." + name;
     }
 
@@ -182,14 +184,14 @@ public class GwtElementalGenerator implements Runnable {
     return result == null ? "" : result;
   }
 
-  public void generateOperation(JavaWriter writer, Operation op) throws IOException {
+  public void generateOperation(JavaWriter writer, Operation op, Type enclosingType) throws IOException {
     StringBuilder javaDoc = new StringBuilder();
 
     writer.emitEmptyLine();
     if (op.getDocumentationSummary() != null) {
       javaDoc.append(documentation(op));
     }
-    writer.emitEmptyLine();
+    javaDoc.append("\n");
 
     int pcount = 0;
     for (Parameter p : op.getParameters()) {
@@ -207,10 +209,35 @@ public class GwtElementalGenerator implements Runnable {
       params.add((isGeneric(p, op, pcount) ? "T" : javaType(p.getType())) + (p.isVariadic() ? "..." : ""));
       params.add(name(p, pcount++));
     }
-    writer.beginMethod(isGenericGetter(op) ? "T" : javaType(op.getType()), op.getName(), Collections.emptySet(), params, null);
+    writer.beginMethod(isGenericGetter(op) ? "T" : javaType(op.getType()), op.getName(),
+        op.hasModifier(Operation.STATIC) ? EnumSet.of(Modifier.STATIC) : Collections.emptySet(), params, null);
+    if (op.hasModifier(Operation.STATIC)) {
+      String args = "";
+      String returnStmt = op.getType() == null ? "" : "return ";
+      String passedParams = "";
+      int i = 0;
+      for (Parameter p : op.getParameters()) {
+        args += "$" + i;
+        passedParams += ", ";
+        passedParams += p.getName();
+        if (i < op.getParameters().size() - 1) {
+          args += ", ";
+        }
+        i++;
+      }
+      writer.emitStatement("%sJs.js(\"%s.%s(%s);\"%s)", returnStmt,
+          enclosingType.getName(),
+          op.getName(),
+          args,
+          passedParams);
+    }
     writer.endMethod();
     if (isGeneric(op.getType())) {
       System.err.println("Rawtype detected, unknown parameter " + op);
+    }
+
+    for (Operation overload : op.getOverloads()) {
+      generateOperation(writer, overload, enclosingType);
     }
   }
 
@@ -231,8 +258,8 @@ public class GwtElementalGenerator implements Runnable {
   }
 
   private boolean isGeneric(Parameter p, Operation op, int pCount) {
-    if (op.getSpecial() == Operation.Special.SETTER && pCount == 1) {
-      if (!isNumber(op.getType()) && !"String".equals(javaType(op.getType()))) {
+    if (op.getSpecial() == Operation.Special.SETTER && pCount == 0) {
+      if (!isNumber(p.getType()) && !"String".equals(javaType(p.getType()))) {
         return true;
       }
     }
@@ -244,14 +271,14 @@ public class GwtElementalGenerator implements Runnable {
   }
 
   private String javaType(Type type) {
-    if (isArray(type)) {
+    if (isArray(type) && !isNumber(type.getSuperType())) {
       return "JsArrayLike<" + qualifiedType(handleTypeDef(type.getSuperType())) + ">";
     }
     return qualifiedType(handleTypeDef(type));
   }
 
   private boolean isArray(Type type) {
-    if (type != null && type.getKind() == Type.Kind.ARRAY && !isNumber(type.getSuperType())) {
+    if (type != null && type.getKind() == Type.Kind.ARRAY) {
       return true;
     }
     return false;
@@ -272,6 +299,7 @@ public class GwtElementalGenerator implements Runnable {
         // getter
         writer.beginMethod(javaType(p.getType()), name(p), Collections.emptySet());
         writer.endMethod();
+        writer.emitEmptyLine();
         // setter
         if (!p.hasModifier(Artifact.READ_ONLY)) {
           writer.emitAnnotation("JsProperty");
@@ -375,7 +403,13 @@ public class GwtElementalGenerator implements Runnable {
         }
       }
       try {
-        writer.beginType(javaType(type) + genericParam, "interface", EnumSet.of(Modifier.PUBLIC), null,
+        String typeName = javaType(type);
+        // we use "String" as return type everywhere, but we still generate a JsString class
+        // to represent native String object IDL access not covered by java.lang.String
+        if ("String".equals(typeName)) {
+          typeName = "JsString";
+        }
+        writer.beginType(typeName + genericParam, "interface", EnumSet.of(Modifier.PUBLIC), null,
             implementsTypes.toArray(new String[implementsTypes.size()]));
         if (constructors.size() == 0) {
         } else {
@@ -384,7 +418,7 @@ public class GwtElementalGenerator implements Runnable {
         generateProperties(writer, type);
 
         for (Operation op : type.getOwnOperations()) {
-          generateOperation(writer, op);
+          generateOperation(writer, op, type);
         }
       } finally {
         writer.endType();
@@ -395,6 +429,9 @@ public class GwtElementalGenerator implements Runnable {
   }
 
   private JavaWriter getJavaWriter(String name) throws Exception {
+    if ("String".equals(name)) {
+      name = "JsString";
+    }
     File pkg = new File(root, "gwt");
     pkg.mkdirs();
     File file = new File(pkg, name + ".java");

@@ -2,6 +2,7 @@
 package org.html5index.generator.elemental;
 
 import static javax.lang.model.element.Modifier.ABSTRACT;
+import static javax.lang.model.element.Modifier.STATIC;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -431,7 +432,7 @@ public class JavaWriter implements Closeable {
         emitCompressedType(throwsTypes.get(i));
       }
     }
-    if (modifiers.contains(ABSTRACT) || Scope.INTERFACE_DECLARATION.equals(scopes.peek())) {
+    if (modifiers.contains(ABSTRACT) || Scope.INTERFACE_DECLARATION.equals(scopes.peek()) && !modifiers.contains(STATIC)) {
       out.write(";\n");
       scopes.push(Scope.ABSTRACT_METHOD);
     } else {
@@ -821,7 +822,8 @@ public class JavaWriter implements Closeable {
   }
 
   private static final EnumSet<Scope> METHOD_SCOPES = EnumSet.of(
-      Scope.NON_ABSTRACT_METHOD, Scope.CONSTRUCTOR, Scope.CONTROL_FLOW, Scope.INITIALIZER);
+      Scope.NON_ABSTRACT_METHOD, Scope.CONSTRUCTOR, Scope.CONTROL_FLOW, Scope.INITIALIZER,
+      Scope.ABSTRACT_METHOD);
 
   private void checkInMethod() {
     if (!METHOD_SCOPES.contains(scopes.peekFirst())) {

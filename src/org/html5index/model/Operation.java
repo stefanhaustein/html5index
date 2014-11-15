@@ -1,12 +1,15 @@
 package org.html5index.model;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.TreeMap;
 
 public class Operation extends Member {
   private ArrayList<Parameter> parameters = new ArrayList<Parameter>();
   private String body;
   private Special special;
+  private TreeMap<String, Operation> overloads = new TreeMap<>();
 
   public Operation(int modifiers, Type type, String name) {
     super(modifiers, type, name);
@@ -48,6 +51,26 @@ public class Operation extends Member {
     return sb.toString();
   }
 
+
+  public String signature () {
+    if (name.equals("(main)")) {
+      return "(main)";
+    }
+    StringBuilder sb = new StringBuilder(name);
+    sb.append('(');
+    boolean first = true;
+    for (Parameter p : parameters) {
+      if (!first) {
+        sb.append(",");
+      } else {
+        first = false;
+      }
+      sb.append(p.getType() != null ? p.getType().getName() : "void");
+    }
+    sb.append(')');
+    return sb.toString();
+  }
+
   public List<Parameter> getParameters() {
     return parameters;
   }
@@ -78,15 +101,37 @@ public class Operation extends Member {
   }
     
   public void merge(Model model, Operation merge) {
-    ArrayList<Parameter> merged = new ArrayList<Parameter>();
-    int len = Math.max(parameters.size(), merge.parameters.size());
-    for (int i = 0; i < len; i++) {
-      merged.add(mergeParameter(model, getParameterOrNull(i), merge.getParameterOrNull(i)));
+    mergeOverloads(model, merge);
+    // dont merge getters with anything
+    if (getSpecial() == Special.NONE) {
+      ArrayList<Parameter> merged = new ArrayList<Parameter>();
+      int len = Math.max(parameters.size(), merge.parameters.size());
+      for (int i = 0; i < len; i++) {
+        merged.add(mergeParameter(model, getParameterOrNull(i), merge.getParameterOrNull(i)));
+      }
+      parameters.clear();
+      // Make sure owner is set correctly...
+      for (Parameter p : merged) {
+        addParameter(p);
+      }
     }
-    parameters.clear();
+  }
+
+  private void mergeOverloads(Model model, Operation merge) {
+    Operation overload = overloads.get(merge.signature());
+    if (overload == null) {
+      overloads.put(merge.signature(), merge);
+      return;
+    }
+    ArrayList<Parameter> merged = new ArrayList<Parameter>();
+    int len = Math.max(merge.parameters.size(), overload.parameters.size());
+    for (int i = 0; i < len; i++) {
+      merged.add(mergeParameter(model, overload.getParameterOrNull(i), merge.getParameterOrNull(i)));
+    }
+    overload.parameters.clear();
     // Make sure owner is set correctly...
     for(Parameter p: merged) {
-      addParameter(p);
+      overload.addParameter(p);
     }
   }
 
@@ -106,6 +151,10 @@ public class Operation extends Member {
 
   public Special getSpecial() {
     return special;
+  }
+
+  public Collection<Operation> getOverloads() {
+    return overloads.values();
   }
 
   public enum Special {GETTER, SETTER, NONE}
