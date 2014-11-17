@@ -9,41 +9,48 @@ public class Sources {
         "http://www.ecma-international.org/ecma-262/5.1/", "/idl/ecmascript.idl")
      .addTutorial("Webplatform: Programming Basics", "http://docs.webplatform.org/wiki/concepts/programming/programming_basics"),
     new Html5SpecScan("DOM", Category.SEMANTICS, "http://dom.spec.whatwg.org/",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/dom.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/elements.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/semantics.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/sections.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/grouping-content.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/text-level-semantics.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/edits.html",
-//        "http://www.whatwg.org/specs/web-apps/current-work/multipage/embedded-content-1.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-iframe-element.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-map-element.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/links.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/tabular-data.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/scripting-1.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/forms.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-input-element.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-button-element.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/association-of-controls-and-forms.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/interactive-elements.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/commands.html")
+        "http://www.w3.org/TR/DOM-Level-3-Events/",
+        "http://www.w3.org/TR/touch-events/",
+        "https://xhr.spec.whatwg.org/",
+        "http://www.w3.org/TR/mediaqueries-4/",
+//        "http://dev.w3.org/csswg/css-color/",
+        "http://dev.w3.org/csswg/cssom/",
+        "http://dev.w3.org/html5/webvtt/",
+        "http://html.spec.whatwg.org/multipage/dom.html",
+        "http://html.spec.whatwg.org/multipage/elements.html",
+        "http://html.spec.whatwg.org/multipage/semantics.html",
+        "http://html.spec.whatwg.org/multipage/sections.html",
+        "http://html.spec.whatwg.org/multipage/grouping-content.html",
+        "http://html.spec.whatwg.org/multipage/text-level-semantics.html",
+        "http://html.spec.whatwg.org/multipage/edits.html",
+//        "http://html.spec.whatwg.org/multipage/embedded-content-1.html",
+        "http://html.spec.whatwg.org/multipage/the-iframe-element.html",
+        "http://html.spec.whatwg.org/multipage/the-map-element.html",
+        "http://html.spec.whatwg.org/multipage/links.html",
+        "http://html.spec.whatwg.org/multipage/tabular-data.html",
+        "http://html.spec.whatwg.org/multipage/scripting-1.html",
+        "http://html.spec.whatwg.org/multipage/forms.html",
+        "http://html.spec.whatwg.org/multipage/the-input-element.html",
+        "http://html.spec.whatwg.org/multipage/the-button-element.html",
+        "http://html.spec.whatwg.org/multipage/association-of-controls-and-forms.html",
+        "http://html.spec.whatwg.org/multipage/interactive-elements.html",
+        "http://html.spec.whatwg.org/multipage/commands.html")
       .addTutorial("A dive into plain Javascript", "http://blog.adtile.me/2014/01/16/a-dive-into-plain-javascript/"),
     new Html5SpecScan("Browser", Category.PERFORMANCE,
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/browsers.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/history.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/webappapis.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/timers.html")
+        "http://html.spec.whatwg.org/multipage/browsers.html",
+        "http://html.spec.whatwg.org/multipage/history.html",
+        "http://html.spec.whatwg.org/multipage/webappapis.html",
+        "http://html.spec.whatwg.org/multipage/timers.html")
       .addTutorial("Treehouse: Getting started with the History API", "http://blog.teamtreehouse.com/getting-started-with-the-history-api")
       .addTutorial("Dive into HTML5: Manipulating history for fun & profit", "http://diveintohtml5.info/history.html"),
     new Html5SpecScan("Drag and Drop", Category.DEVICE_ACCESS,
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/dnd.html")
+        "http://html.spec.whatwg.org/multipage/dnd.html")
       .addTutorial("MDN Drag and Drop Tutorial", "https://developer.mozilla.org/en-US/docs/DragDrop/Drag_and_Drop")
       .addTutorial("HTML5 Rocks Drag and Drop Tutorial", "http://www.html5rocks.com/en/tutorials/dnd/basics/"),
     new Html5SpecScan("Web Sockets and Messaging", Category.CONNECTIVITY,
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/network.html",
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/web-messaging.html")
+        "http://html.spec.whatwg.org/multipage/comms.html",
+        "http://html.spec.whatwg.org/multipage/network.html",
+        "http://html.spec.whatwg.org/multipage/web-messaging.html")
       .addTutorial("Treehouse Websocket Introduction", "http://blog.teamtreehouse.com/an-introduction-to-websockets")
       .addTutorial("HTML5 Rocks Websocket Tutorial", "http://www.html5rocks.com/en/tutorials/websockets/basics/"),
     new Html5SpecScan("Animation Timing", Category.MULTIMEDIA, "http://www.w3.org/TR/animation-timing/")
@@ -51,22 +58,22 @@ public class Sources {
     new Html5SpecScan("Pointer Lock", Category.MULTIMEDIA, "http://www.w3.org/TR/pointerlock/")
        .addTutorial("HTML5 Rocks: Pointer Lock and First Person Shooter Controls", "http://www.html5rocks.com/en/tutorials/pointerlock/intro/"),
     new Html5SpecScan("Media", Category.MULTIMEDIA,
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-video-element.html")
+        "http://html.spec.whatwg.org/multipage/the-video-element.html")
       .addTutorial("HTML5 Rocks Video Tutorial", "http://www.html5rocks.com/en/tutorials/video/basics/")
       .addTutorial("MDN: Using HTML5 Video and Audio", "https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Using_HTML5_audio_and_video"),
     new Html5SpecScan("Offline", Category.OFFLINE_STORAGE,
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/offline.html")
+        "http://html.spec.whatwg.org/multipage/offline.html")
       .addTutorial("HTML5 Rocks: A Beginner's Guide to Using the Application Cache", "http://www.html5rocks.com/en/tutorials/appcache/beginner/"),
     new Html5SpecScan("Canvas", Category.GRAPHICS,
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/the-canvas-element.html")
+        "http://html.spec.whatwg.org/multipage/the-canvas-element.html")
       .addTypeIdMap("CanvasRenderingContext2D", "2dcontext")
       .addTutorial("MDN Canvas Tutorial", "https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Canvas_tutorial"),
     new Html5SpecScan("Web Workers", Category.PERFORMANCE,
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/workers.html")
+        "http://html.spec.whatwg.org/multipage/workers.html")
       .addTutorial("MDN: Using web workers", "https://developer.mozilla.org/en-US/docs/Web/Guide/Performance/Using_web_workers")
       .addTutorial("HTML 5: The Basics of Web Workers", "http://www.html5rocks.com/en/tutorials/workers/basics/"),
     new Html5SpecScan("Web Storage", Category.OFFLINE_STORAGE,
-        "http://www.whatwg.org/specs/web-apps/current-work/multipage/webstorage.html"),
+        "http://html.spec.whatwg.org/multipage/webstorage.html"),
     new Html5SpecScan("File API", Category.OFFLINE_STORAGE, "http://www.w3.org/TR/FileAPI/",
         "http://www.w3.org/TR/file-writer-api/")
       .addTutorial("HTML5 Rocks: File Tutorial", "http://www.html5rocks.com/en/tutorials/file/dndfiles/")

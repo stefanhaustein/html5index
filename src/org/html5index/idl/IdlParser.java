@@ -66,6 +66,8 @@ public class IdlParser {
       put("WillBeGarbageCollected", IGNORE);
       put("CustomConstructor", IGNORE_PAREN);
       put("CheckSecurity", IGNORE_EQUALS);
+      put("Clamp", IGNORE);
+      put("TreatNullAs", IGNORE_EQUALS);
     }
   };
 
@@ -126,7 +128,7 @@ public class IdlParser {
         tokenizer.nextToken();
         Type base = parseType();
         type.addType(base);
-        base.addImplemenetedBy(type);
+        base.addImplementedBy(type);
       } while (tokenizer.sval.equals(","));
     }
     
@@ -219,7 +221,12 @@ public class IdlParser {
       consumeIdentifier(); // exception(?);
       consume(')');
     }
-    
+
+    if (tokenizer.ttype != ';') {
+      // buggy spec, has extraidentifier before semicolon,
+      // consume it to recover from error
+      consumeIdentifier();
+    }
     consume(';');
     return new Property(modifiers, propertyType, name, null);
   }
@@ -339,6 +346,7 @@ public class IdlParser {
       Type keyType = parseType();
       Type valueType = null;
       if (tokenizer.ttype == ',') {
+        consume(',');
         valueType = parseType();
       }
       consume('>');
@@ -437,7 +445,7 @@ public class IdlParser {
         consume(Tokenizer.TT_WORD, "implements");
         Type interfaceType = parseType();
         target.addType(interfaceType);
-        interfaceType.addImplemenetedBy(target);
+        interfaceType.addImplementedBy(target);
         consume(';');
       } else {
         fail("dictionary, callback, exception, interface, typedef, valuetype, module or const expected");
@@ -454,6 +462,7 @@ public class IdlParser {
     } 
     consume('{');
     do {
+      parseOptions();
       Type fieldType = parseType();
       String fieldName = consumeIdentifier();
       String value = null;
@@ -560,6 +569,7 @@ public class IdlParser {
         } else if ("Callback".equals(option)) {
           consume('=');
           consumeIdentifier();
+          kind = Kind.CALLBACK_INTERFACE;
         } else if ("Constructor".equals(option) || "NamedConstructor".equals(option)) {
           String name = "";
           if (option.equals("NamedConstructor")) {
@@ -614,21 +624,35 @@ public class IdlParser {
       } while(tokenizer.ttype == ',');
       consume(']');
     }
+    Type type = null;
+
     if ("partial".equals(tokenizer.sval)) {
       kind = Type.Kind.PARTIAL;
       tokenizer.nextToken();
     } else if ("callback".equals(tokenizer.sval)) {
       tokenizer.nextToken();
       if (!tokenizer.sval.equals("interface")) {
-        do {
-          tokenizer.nextToken();
-        } while (tokenizer.ttype != ';');
-        tokenizer.nextToken();
+        kind = Type.Kind.CALLBACK_INTERFACE;
+
+        // not a callback interface
+        String callbackTypeName = consumeIdentifier();
+        consume('=');
+        Type returnType = parseType();
+        type = new Type(callbackTypeName, kind, null);
+        Operation op = new Operation(0, returnType, "on" + callbackTypeName);
+        parseParameterList(op);
+        consume(';');
+        type.addOperation(op);
+        lib.addType(type);
+        documentationProvider.addDocumentation(type);
+        documentationProvider.addDocumentation(op);
+//        do {
+//          tokenizer.nextToken();
+//        } while (tokenizer.ttype != ';');
+//        tokenizer.nextToken();
         return;
       }
-      kind = Type.Kind.CALLBACK_INTERFACE;
     }
-    Type type = null;
     if ("interface".equals(tokenizer.sval) || "class".equals(tokenizer.sval)) {
       type = parseInterface(kind);
     } else if ("exception".equals(tokenizer.sval)) {
@@ -647,6 +671,7 @@ public class IdlParser {
         }
         type.addConstructor(constructor);
         documentationProvider.addDocumentation(constructor);
+        lib.addType(type);
       }
     }
   }

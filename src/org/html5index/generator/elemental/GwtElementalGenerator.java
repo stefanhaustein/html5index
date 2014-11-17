@@ -57,7 +57,8 @@ public class GwtElementalGenerator implements Runnable {
 
       Map<String, Type> mergedTypes = new HashMap<>();
       for (Library l : model.getLibraries()) {
-        for (Type t : l.getTypes()) {
+        ArrayList<Type> typesToProcess = new ArrayList<>(l.getTypes());
+        for (Type t : typesToProcess) {
           Type merged = mergedTypes.get(t.getName());
           if (merged == null) {
             merged = t;
@@ -69,11 +70,15 @@ public class GwtElementalGenerator implements Runnable {
             for (Operation op : t.getOwnOperations()) {
               merged.addOperation(op);
             }
-            for (Type impls : t.getTypes()) {
+            ArrayList<Type> typesToMerge = new ArrayList<>(t.getTypes());
+            for (Type impls : typesToMerge) {
               merged.addType(impls);
             }
             for (Type implBy : t.getImplementedBy()) {
-              merged.addImplemenetedBy(implBy);
+              if (t == merged) {
+                continue;
+              }
+              merged.addImplementedBy(implBy);
             }
             for (String e : t.getEnumLiterals()) {
               merged.addEnumLiteral(e);
@@ -85,12 +90,16 @@ public class GwtElementalGenerator implements Runnable {
         }
       }
       for (Type t : mergedTypes.values()) {
-        if (t.getKind() == Type.Kind.ALIAS || t.getKind() == Type.Kind.PARTIAL ||
+        if (t.getKind() == Type.Kind.ALIAS ||
             t.getKind() == Type.Kind.SEQUENCE) {
           continue;
         }
         System.out.println("Writing " + mapJavaType(t));
-        generateInterface(t);
+        if (t.getKind() == Type.Kind.ENUM) {
+          generateEnum(t);
+        } else {
+          generateInterface(t);
+        }
       }
 
     } catch (Exception e) {
@@ -198,10 +207,6 @@ public class GwtElementalGenerator implements Runnable {
       javaDoc.append("@param " + name(p, pcount++) + " " + documentation(p) + "\n");
     }
 
-    if (op.hasModifier(Operation.CONSTRUCTOR)) {
-      // TODO (cromwellian): handle constructor
-    }
-
     writer.emitJavadoc(javaDoc.toString());
     List<String> params = new ArrayList<>();
     pcount = 0;
@@ -209,9 +214,14 @@ public class GwtElementalGenerator implements Runnable {
       params.add((isGeneric(p, op, pcount) ? "T" : javaType(p.getType())) + (p.isVariadic() ? "..." : ""));
       params.add(name(p, pcount++));
     }
-    writer.beginMethod(isGenericGetter(op) ? "T" : javaType(op.getType()), op.getName(),
-        op.hasModifier(Operation.STATIC) ? EnumSet.of(Modifier.STATIC) : Collections.emptySet(), params, null);
-    if (op.hasModifier(Operation.STATIC)) {
+    if (op.hasModifier(Operation.CONSTRUCTOR)) {
+      writer.beginMethod(javaType(enclosingType), "create", EnumSet.of(Modifier.STATIC), params, null);
+    } else {
+      writer.beginMethod(isGenericGetter(op) ? "T" : javaType(op.getType()), op.getName(),
+          op.hasModifier(Operation.STATIC) ?
+              EnumSet.of(Modifier.STATIC) : Collections.emptySet(), params, null);
+    }
+    if (op.hasModifier(Operation.STATIC) || op.hasModifier(Operation.CONSTRUCTOR)) {
       String args = "";
       String returnStmt = op.getType() == null ? "" : "return ";
       String passedParams = "";
@@ -225,11 +235,18 @@ public class GwtElementalGenerator implements Runnable {
         }
         i++;
       }
-      writer.emitStatement("%sJs.js(\"%s.%s(%s);\"%s)", returnStmt,
-          enclosingType.getName(),
-          op.getName(),
-          args,
-          passedParams);
+      if (op.hasModifier(Operation.CONSTRUCTOR)) {
+        writer.emitStatement("return Js.js(\"new %s(%s);\"%s)",
+            enclosingType.getName(),
+            args,
+            passedParams);
+      } else {
+        writer.emitStatement("%sJs.js(\"%s.%s(%s);\"%s)", returnStmt,
+            enclosingType.getName(),
+            op.getName(),
+            args,
+            passedParams);
+      }
     }
     writer.endMethod();
     if (isGeneric(op.getType())) {
@@ -367,24 +384,94 @@ public class GwtElementalGenerator implements Runnable {
   }
 
   private String name(Property p) {
-    return p.getName();
+    String name = p.getName();
+    if (p.getType() != null && isEventHandler(p.getType())) {
+      name = "on" + capitalize(name.substring(2));
+    }
+    return name;
   }
 
-  public void generateInterface(Type type) {
+  private String capitalize(String ident) {
+    return Character.toUpperCase(ident.charAt(0)) + ident.substring(1);
+  }
+
+  private boolean isEventHandler(Type type) {
+    if (javaType(type).contains("EventHandler")) {
+      return true;
+    }
+    return false;
+  }
+
+  public void generateEnum(Type type) {
     try (JavaWriter writer = getJavaWriter(mapJavaType(type))) {
       Collection<Operation> constructors = type.getConstructors();
 
+      writePreamble(writer);
 
-      writer.emitPackage("gwt");
+      if (type.getDocumentationSummary() != null) {
+        writer.emitJavadoc(documentation(type));
+      }
+      writer.emitAnnotation("JsType");
+
+      try {
+        String typeName = javaType(type);
+        // we use "String" as return type everywhere, but we still generate a JsString class
+        // to represent native String object IDL access not covered by java.lang.String
+        if ("String".equals(typeName)) {
+          typeName = "JsString";
+        }
+        writer.beginType(typeName, "enum", EnumSet.of(Modifier.PUBLIC), null);
+        int count = 0, max = type.getEnumLiterals().size();
+        for (String enumLiteralString : type.getEnumLiterals()) {
+
+          // TODO (cromwellian): hacky, JavaWriter limitation, use field to store actual enum value
+          String enumConstantName = enumLiteralString.replace(" ", "_").toUpperCase();
+          if ("".equals(enumLiteralString.trim())) {
+            enumConstantName = "NONE";
+          }
+          writer.emitEnumValue(enumConstantName, count == max - 1);
+          count++;
+        }
+        writer.beginMethod("String", "valueOf", EnumSet.of(Modifier.PUBLIC));
+        writer.emitStatement("return this == NONE ? \"\" : name().replace(\"_\", \" \").toLowerCase()");
+        writer.endMethod();
+
+        writer.beginMethod("String", "toString", EnumSet.of(Modifier.PUBLIC));
+        writer.emitStatement("return valueOf()");
+        writer.endMethod();
+
+      } finally {
+        writer.endType();
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void generateInterface(Type type) {
+    if (type.getKind() == Type.Kind.ALIAS) {
+      return;
+    }
+
+    try (JavaWriter writer = getJavaWriter(mapJavaType(type))) {
+      Collection<Operation> constructors = type.getConstructors();
+
+      writePreamble(writer);
+
+
       if (type.getDocumentationSummary() != null) {
         writer.emitJavadoc(documentation(type));
       }
       writer.emitAnnotation("JsType" + (constructors.size() == 0 ?
           "" : ("(prototype = \"" + constructors.iterator().next().getName() + "\")")));
+      if (type.getKind() == Type.Kind.CALLBACK_FUNCTION || type.getKind() == Type.Kind.CALLBACK_INTERFACE) {
+        writer.emitAnnotation("java.lang.FunctionalInterface");
+      }
       List<String> implementsTypes = new ArrayList<>();
       if (type.getSuperType() != null) {
         implementsTypes.add(javaType(type.getSuperType()));
-      } else if (type.getTypes().isEmpty()) {
+      } else if (type.getTypes().isEmpty() && type.getKind() != Type.Kind.CALLBACK_INTERFACE
+          && type.getKind() != Type.Kind.CALLBACK_FUNCTION) {
         implementsTypes.add("gwt.JsObject");
       }
       for (Type t : type.getTypes()) {
@@ -402,6 +489,8 @@ public class GwtElementalGenerator implements Runnable {
               "IterateAsArray(getter = \"" + op.getName() + "\", length=\"length\")");
         }
       }
+      implementsTypes.remove(javaType(type));
+
       try {
         String typeName = javaType(type);
         // we use "String" as return type everywhere, but we still generate a JsString class
@@ -411,10 +500,15 @@ public class GwtElementalGenerator implements Runnable {
         }
         writer.beginType(typeName + genericParam, "interface", EnumSet.of(Modifier.PUBLIC), null,
             implementsTypes.toArray(new String[implementsTypes.size()]));
-        if (constructors.size() == 0) {
-        } else {
-        }
 
+        if (type.getKind() == Type.Kind.DICTIONARY) {
+          writer.beginMethod(javaType(type), "create", EnumSet.of(Modifier.STATIC), null, null);
+          writer.emitStatement("return Js.js(\"{}\")");
+          writer.endMethod();
+        }
+        for (Operation ctor : type.getConstructors()) {
+          generateOperation(writer, ctor, type);
+        }
         generateProperties(writer, type);
 
         for (Operation op : type.getOwnOperations()) {
@@ -426,6 +520,15 @@ public class GwtElementalGenerator implements Runnable {
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
+
+  private void writePreamble(JavaWriter writer) throws IOException {
+    writer.emitPackage("gwt");
+    writer.emitImports("com.google.gwt.core.client.js.Js");
+    writer.emitImports("com.google.gwt.core.client.js.JsProperty");
+    writer.emitImports("com.google.gwt.core.client.js.JsType");
+    writer.emitImports("com.google.gwt.core.client.js.JsArrayLike");
+    writer.emitImports("com.google.gwt.core.client.impl.IterateAsArray");
   }
 
   private JavaWriter getJavaWriter(String name) throws Exception {
@@ -443,6 +546,11 @@ public class GwtElementalGenerator implements Runnable {
   public void generateType(Type type) throws IOException {
     switch (type.getKind()) {
       case INTERFACE:
+        generateInterface(type);
+        break;
+      case CALLBACK_INTERFACE:
+      case CALLBACK_FUNCTION:
+        boolean xx = true;
         generateInterface(type);
         break;
       default:

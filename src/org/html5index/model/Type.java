@@ -59,7 +59,7 @@ public class Type extends Artifact {
     return enumLiterals;
   }
   
-  public void addImplemenetedBy(Type type) {
+  public void addImplementedBy(Type type) {
     implementedBy.add(type);
   }
   
@@ -74,7 +74,7 @@ public class Type extends Artifact {
   public void setSuperType(Type superType) {
     this.superType = superType;
     if (this.kind != Kind.UNION && this.kind != Kind.SEQUENCE && this.kind != Kind.NULLABLE) {
-      superType.addImplemenetedBy(this);
+      superType.addImplementedBy(this);
     }
   }
 
