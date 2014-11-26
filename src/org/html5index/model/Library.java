@@ -26,7 +26,7 @@ public class Library extends Artifact {
   public void addType(Type type) {
     Type existing = classes.get(type.getName());
     if (existing != null && existing != type) {
-      throw new RuntimeException("Overwriting existing type: " + type);
+//      throw new RuntimeException("Overwriting existing type: " + type);
     }
     classes.put(type.getName(), type);
     type.owner = this;

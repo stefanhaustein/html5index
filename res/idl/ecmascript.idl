@@ -36,7 +36,8 @@ interface Object {
   static boolean isFrozen(in Object o);
   static boolean isExtensible(in Object o);
   static string[] keys(in Object o);
-  
+  static Object setPrototypeOf(in Object o, in Object prototype);
+
   string toString();
   string toLocaleString();
   Object valueOf();
@@ -279,6 +280,11 @@ interface JSON {
   static any parse(string json);
   static string stringify(any value, optional any replacer, optional any space);
 };
+
+
+typedef (ArrayBufferView or ArrayBuffer) BufferSource;
+typedef unsigned long long DOMTimeStamp;
+callback VoidFunction = void ();
 
 
 // TODO(haustein): RegExp, Errors, Json

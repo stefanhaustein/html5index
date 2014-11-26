@@ -79,6 +79,9 @@ public class DomLoader {
         }
       }
     }
+    if (charSet.contains("UTF-8")) {
+      charSet = "UTF8";
+    }
     BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream(), charSet));
     String text = loadText(reader);
     reader.close();

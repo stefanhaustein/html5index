@@ -322,6 +322,7 @@ public class IdlParser {
           name = "unsigned " + consumeIdentifier();
         }
       } else {
+        parseOptions();
         name = consumeIdentifier();
       }
       if (tokenizer.ttype != Tokenizer.TT_SCOPE) {
@@ -336,12 +337,29 @@ public class IdlParser {
     }
     
     Type type;
+    if (name.contains("ResponsePromise")) {
+      boolean xx = true;
+    }
+
     if (name.equals("sequence")) {
-      consume('<');
-      Type baseType = parseType();
-      consume('>');
-      type = new Type("sequence<" + baseType.getName() + ">", Type.Kind.SEQUENCE, baseType);
-    } else if (name.equals("iterable")) {
+      if (tokenizer.ttype == '<') {
+        consume('<');
+        Type baseType = parseType();
+        consume('>');
+        type = new Type("sequence<" + baseType.getName() + ">", Type.Kind.SEQUENCE, baseType);
+      } else {
+        type = new Type("sequence", Type.Kind.SEQUENCE, new Type("Object", Kind.INTERFACE, null));
+      }
+    } else if (name.equals("Promise")) {
+      if (tokenizer.ttype == '<') {
+        consume('<');
+        Type baseType = parseType();
+        consume('>');
+        type = new Type("Promise", Type.Kind.PROMISE, baseType);
+      } else {
+        type = new Type("Promise", Type.Kind.PROMISE, new Type("Object", Kind.INTERFACE, null));
+      }
+    } else if (name.equals("iterable") || name.equals("setlike") || name.equals("maplike")) {
       consume('<');
       Type keyType = parseType();
       Type valueType = null;
@@ -350,9 +368,11 @@ public class IdlParser {
         valueType = parseType();
       }
       consume('>');
-      type = new Type("iterable<" + keyType.getName() + (valueType != null ? "," + valueType.getName() : "") +">", Type.Kind.SEQUENCE, keyType);
+      type = new Type(name + "<" + keyType.getName() + (valueType != null ? "," + valueType
+          .getName() : "") +">", Type.Kind.SEQUENCE, keyType);
       type.setIterable(keyType, valueType);
     } else if (tokenizer.ttype == '<') {
+
       // parse arbitrary generic
       consume('<');
       Type baseType = parseType();
@@ -364,7 +384,10 @@ public class IdlParser {
       }
       genericSignature += ">";
       consume('>');
-      type = new Type(getOrMakeType(name) + genericSignature, Type.Kind.GENERIC, baseType);
+      Type existingType = getOrMakeType(name);
+      type = new Type(existingType + genericSignature, existingType.getKind() == Kind.PROMISE ?
+          Kind.PROMISE :
+          Type.Kind.GENERIC, baseType);
     } else {
       type = getOrMakeType(name);
       if (tokenizer.ttype == '?') {
@@ -461,7 +484,7 @@ public class IdlParser {
       type.setSuperType(parseType());
     } 
     consume('{');
-    do {
+    while (tokenizer.ttype != '}') {
       parseOptions();
       Type fieldType = parseType();
       String fieldName = consumeIdentifier();
@@ -469,7 +492,7 @@ public class IdlParser {
       if (tokenizer.ttype == '=') {
         consume('=');
         StringBuilder sb = new StringBuilder();
-        while(tokenizer.ttype != ';' && tokenizer.ttype != Tokenizer.TT_EOF) {
+        while (tokenizer.ttype != ';' && tokenizer.ttype != Tokenizer.TT_EOF) {
           sb.append(tokenizer.sval);
           sb.append(' ');
           tokenizer.nextToken();
@@ -480,9 +503,12 @@ public class IdlParser {
       type.addProperty(property);
       documentationProvider.addDocumentation(property);
       consume(';');
-    } while (tokenizer.ttype != '}');
+    }
     consume('}');
-    consume(';');
+    // Buggy spec at html.spec.whatwg.org/scripting.html
+    if (!"CanvasRenderingContext2DSettings".equals(type.getName())) {
+      consume(';');
+    }
   }
 
   private void parseEnum() {
@@ -567,8 +593,10 @@ public class IdlParser {
             }
           }
         } else if ("Callback".equals(option)) {
-          consume('=');
-          consumeIdentifier();
+          if (tokenizer.ttype == '=') {
+            consume('=');
+            consumeIdentifier();
+          }
           kind = Kind.CALLBACK_INTERFACE;
         } else if ("Constructor".equals(option) || "NamedConstructor".equals(option)) {
           String name = "";
@@ -594,6 +622,12 @@ public class IdlParser {
           } else {
             consumeIdentifier();
           }
+        } else if ("MapClass".equals(option)) {
+          consume('(');
+          parseType();
+          consume(',');
+          parseType();
+          consume(')');
         } else {
           Integer modifier = EXTENDED_ATTRIBUTES.get(option);
           if (modifier == null) {
@@ -725,6 +759,11 @@ public class IdlParser {
       
       if(tokenizer.ttype == ',') {
         tokenizer.nextToken();
+      } else if (tokenizer.ttype == '?') {
+        // bug in css-color spec, reversed order variable name and type
+        consume('?');
+        consume('=');
+        consumeIdentifier();
       } else if (tokenizer.ttype != ')') {
         fail("',' or ')' expected");
       }

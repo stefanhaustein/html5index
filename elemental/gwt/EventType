@@ -1,0 +1,16 @@
+package gwt;
+
+public interface EventType<T extends EventListener> {
+  static EventType<MouseEventListener> CLICK = EventTypeImpl.make("click");
+  String asString();
+}
+
+interface EventType<T extends EventListener> {
+  static EventType<MouseEventListener> CLICK = EventTypeImpl.make("click");
+  String asString();
+}
+
+static class EventTypeImpl<T> extends JavaScriptObject implements EventType<T> {
+  static EventType<T> make(String type) { return Js.js("Object($0)", type); }
+  String asString() { return Js.js("this"); }
+}

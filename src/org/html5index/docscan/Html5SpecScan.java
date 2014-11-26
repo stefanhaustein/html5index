@@ -1,10 +1,5 @@
 package org.html5index.docscan;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.html5index.idl.IdlParser;
 import org.html5index.model.Artifact;
 import org.html5index.model.Library;
@@ -12,8 +7,14 @@ import org.html5index.model.Type;
 import org.html5index.util.HtmlWriter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Supports multiple sources; IDL is embedded.
@@ -24,20 +25,20 @@ public class Html5SpecScan extends AbstractSpecScan {
   final Map<String, String[]> definitions = new HashMap<String, String[]>();
   private NodeList currentIdlLinks;
   private int currentIdlLinkIndex;
-  final HashMap<String,String> typeIdMap = new HashMap<String, String>();
+  final HashMap<String, String> typeIdMap = new HashMap<String, String>();
   boolean fetched = false;
 
   Html5SpecScan(String title, Category category, String... urls) {
     super(title, category);
-    
-    for (String url: urls) {
-      this.urls.add(new String[]{url, url});
+
+    for (String url : urls) {
+      this.urls.add(new String[] {url, url});
     }
   }
 
   public Html5SpecScan addTypeIdMap(String... s) {
     for (int i = 0; i < s.length; i += 2) {
-      typeIdMap.put(s[i], s[i+1]);
+      typeIdMap.put(s[i], s[i + 1]);
     }
     return this;
   }
@@ -60,11 +61,11 @@ public class Html5SpecScan extends AbstractSpecScan {
     }
     return id;
   }
-  
+
   private boolean isValidKey(String key) {
     return definitions.containsKey(key);
   }
-  
+
   private final String[] TYPE_ID_PREFIX = {"the-", "widl-", "idl-def-", "interface-", ""};
   private final String[] TYPE_ID_SUFFIX = {"-interface", "-interfaces", "-section", "-element", ""};
 
@@ -75,8 +76,8 @@ public class Html5SpecScan extends AbstractSpecScan {
       System.out.println("ddd");
     }
     String id = typeToId(name);
-    for (String prefix: TYPE_ID_PREFIX) {
-      for (String suffix: TYPE_ID_SUFFIX) {
+    for (String prefix : TYPE_ID_PREFIX) {
+      for (String suffix : TYPE_ID_SUFFIX) {
         String key = prefix + name + suffix;
         if (isValidKey(key)) {
           return key;
@@ -99,15 +100,15 @@ public class Html5SpecScan extends AbstractSpecScan {
     }
     return null;
   }
-  
+
   private String getKey(Artifact artifact) {
     if (artifact instanceof Type) {
       String key = getTypeKey((Type) artifact);
       if (key != null) {
         return key;
       }
-    } 
-    
+    }
+
     String name = artifact.getName();
     int count = currentIdlLinks.getLength();
     for (int i = 0; i < count; i++) {
@@ -127,7 +128,6 @@ public class Html5SpecScan extends AbstractSpecScan {
     }
     return null;
   }
-  
 
   @Override
   public String getSummary(Artifact artifact) {
@@ -139,28 +139,25 @@ public class Html5SpecScan extends AbstractSpecScan {
     return urlAndSummary == null || urlAndSummary[1].length() == 0 ? null : urlAndSummary[1];
   }
 
-  
   @Override
   public String getLink(Artifact artifact) {
     String key = getKey(artifact);
     if (key == null) {
       return null;
-    } 
+    }
     return key == null ? null : definitions.get(key)[0] + "#" + key;
   }
-
 
   @Override
   public String getTitle() {
     return title;
   }
 
-
   @Override
   public Iterable<String[]> getUrls() {
     return urls;
   }
-  
+
   void fetchAll() {
     if (!fetched) {
       fetched = true;
@@ -191,7 +188,7 @@ public class Html5SpecScan extends AbstractSpecScan {
         }
         String name = element.getNodeName();
         String text = element.getTextContent();
-        if ("div".equals(name) && "section".equals(element.getAttribute("class"))) {
+        if ("div" .equals(name) && "section" .equals(element.getAttribute("class"))) {
           NodeList sub = element.getElementsByTagName("p");
           if (sub.getLength() > 0) {
             text = sub.item(0).getTextContent();
@@ -220,13 +217,13 @@ public class Html5SpecScan extends AbstractSpecScan {
             } else if (element.getNodeName().equals("p")) {
               text = element.getTextContent();
               break;
-            } 
-          } while(++j < 3);
+            }
+          } while (++j < 3);
           if (j == 3) {
             text = "";
           }
         }
-        definitions.put(id, new String[]{url, HtmlWriter.summary(text)});
+        definitions.put(id, new String[] {url, HtmlWriter.summary(text)});
       }
     }
     return title;
@@ -238,7 +235,7 @@ public class Html5SpecScan extends AbstractSpecScan {
       currentIdlLinks = links;
       currentIdlLinkIndex = 0;
       new IdlParser(lib, idl).parse();
-    } catch(Exception e) {
+    } catch (Exception e) {
       System.out.println(idl);
       throw new RuntimeException(e);
     }
@@ -248,22 +245,33 @@ public class Html5SpecScan extends AbstractSpecScan {
   public void readDocumentation(Library lib) {
     fetchAll();
     lib.setDocumentationProvider(this);
-    
-    for (Document doc: docs) {
+
+    for (Document doc : docs) {
+      boolean isServiceWorker = title.indexOf("Service Workers") != -1;
       // Read idl
       NodeList list = doc.getElementsByTagName("pre");
       for (int i = 0; i < list.getLength(); i++) {
         Element pre = (Element) list.item(i);
         String tc = pre.getTextContent().trim();
-        if (pre.getAttribute("class").equals("idl") || 
-            tc.startsWith("interface ") || tc.startsWith("partial interface")) {
-
-          tc = tc.replace("createFor()Blob", "createFor(Blob");
-          tc = tc.replace("attribute DOMString _camel-cased attribute", "attribute DOMString _camel_cased_attribute");
+        if (pre.getAttribute("class").equals("idl") || pre.getAttribute("class")
+            .equals("idl_whatwg") ||
+            tc.startsWith("interface ") || tc.startsWith("partial interface") ||
+            (isServiceWorker && tc.trim().startsWith("["))) {
+          if (title.indexOf("Service Workers") != -1) {
+            // bad hack around example IDLs
+            NamedNodeMap attributes = pre.getParentNode().getParentNode()
+                .getAttributes();
+            Node titleAttribute = attributes.getNamedItem("title");
+            if (titleAttribute != null && titleAttribute.getNodeValue().equals("extensibility")) {
+              continue;
+            }
+          }
+        tc = tc.replace("createFor()Blob", "createFor(Blob");
+        tc = tc.replace("attribute DOMString _camel-cased attribute",
+            "attribute DOMString _camel_cased_attribute");
           addIdl(lib, tc, pre.getElementsByTagName("a"));
         }
       }
-    
       if (title.indexOf("File API") != -1) {
         // The file spec uses this idl code annotation. We permit both for the case that this gets fixed...
         list = doc.getElementsByTagName("code");
@@ -272,7 +280,7 @@ public class Html5SpecScan extends AbstractSpecScan {
           if (code.getAttribute("class").equals("idl-code")) {
             String tc = code.getTextContent();
             // Fix known issues
-            tc = tc.replace("static DOMString? createFor()Blob blob);", 
+            tc = tc.replace("static DOMString? createFor()Blob blob);",
                 "static DOMString? createFor(Blob blob);");
             addIdl(lib, tc, code.getElementsByTagName("a"));
           }
