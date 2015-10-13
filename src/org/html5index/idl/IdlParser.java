@@ -407,6 +407,10 @@ public class IdlParser {
     } 
     consume('{');
     do {
+      boolean required = "required".equals(tokenizer.sval);
+      if (required) {
+        tokenizer.nextToken();
+      }
       Type fieldType = parseType();
       String fieldName = consumeIdentifier();
       String value = null;
